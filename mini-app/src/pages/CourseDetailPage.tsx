@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { coursesApi, CourseDetail, paymentsApi } from '../api'
 import { useTelegram } from '../context/TelegramContext'
 import Loading from '../components/Loading'
