@@ -145,8 +145,64 @@ export const adminApi = {
   createCourse: (data: { title: string; description: string; price: number; stars_price: number; ton_price: number; category: string }) =>
     api.post('/admin/courses', data),
   
+  getCourses: () =>
+    api.get<{ courses: AdminCourse[] }>('/admin/courses'),
+  
+  getCourseDetail: (id: number) =>
+    api.get<AdminCourseDetail>(`/admin/courses/${id}`),
+  
+  deleteCourse: (id: number) =>
+    api.delete(`/admin/courses/${id}`),
+  
+  createLesson: (courseId: number, data: { title: string; description?: string; order?: number; duration?: number; is_free?: boolean }) =>
+    api.post(`/admin/courses/${courseId}/lessons`, data),
+  
+  deleteLesson: (id: number) =>
+    api.delete(`/admin/lessons/${id}`),
+  
+  setLessonVideo: (lessonId: number, data: { video_file_id?: string; video_url?: string; duration?: number }) =>
+    api.post(`/admin/lessons/${lessonId}/video`, data),
+  
+  uploadThumbnail: (courseId: number, file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post(`/admin/courses/${courseId}/thumbnail`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+  
   getUsers: (limit?: number, offset?: number) =>
     api.get('/admin/users', { params: { limit, offset } }),
+}
+
+// Admin types
+export interface AdminCourse {
+  id: number
+  title: string
+  description: string
+  price: number
+  stars_price: number
+  ton_price: number
+  thumbnail: string | null
+  category: string
+  is_active: boolean
+  lessons_count: number
+  created_at: string
+}
+
+export interface AdminLesson {
+  id: number
+  title: string
+  description: string | null
+  order: number
+  duration: number
+  is_free: boolean
+  video_file_id: string | null
+  has_video: boolean
+}
+
+export interface AdminCourseDetail extends AdminCourse {
+  lessons: AdminLesson[]
 }
 
 export default api

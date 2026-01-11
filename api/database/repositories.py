@@ -216,6 +216,22 @@ class CourseRepository:
                 return True
             
             return False
+    
+    async def update_course_thumbnail(self, course_id: int, thumbnail_url: str) -> Optional[Course]:
+        """Kurs thumbnailini yangilash"""
+        async with async_session() as session:
+            result = await session.execute(
+                select(Course).where(Course.id == course_id)
+            )
+            course = result.scalar_one_or_none()
+            
+            if course:
+                course.thumbnail = thumbnail_url
+                course.updated_at = datetime.utcnow()
+                await session.commit()
+                await session.refresh(course)
+            
+            return course
 
 
 class LessonRepository:
@@ -228,15 +244,19 @@ class LessonRepository:
         description: Optional[str] = None,
         video_file_id: Optional[str] = None,
         video_url: Optional[str] = None,
-        duration: int = 0
+        duration: int = 0,
+        order: int = 0,
+        is_free: bool = False
     ) -> Lesson:
         """Yangi dars yaratish"""
         async with async_session() as session:
             # Tartib raqamini aniqlash
-            result = await session.execute(
-                select(func.max(Lesson.order)).where(Lesson.course_id == course_id)
-            )
-            max_order = result.scalar() or 0
+            if order == 0:
+                result = await session.execute(
+                    select(func.max(Lesson.order)).where(Lesson.course_id == course_id)
+                )
+                max_order = result.scalar() or 0
+                order = max_order + 1
             
             lesson = Lesson(
                 course_id=course_id,
@@ -245,7 +265,8 @@ class LessonRepository:
                 video_file_id=video_file_id,
                 video_url=video_url,
                 duration=duration,
-                order=max_order + 1
+                order=order,
+                is_free=is_free
             )
             session.add(lesson)
             await session.commit()
@@ -288,6 +309,55 @@ class LessonRepository:
                 .order_by(Lesson.order)
             )
             return list(result.scalars().all())
+    
+    async def update_lesson_video(
+        self,
+        lesson_id: int,
+        video_file_id: Optional[str] = None,
+        video_url: Optional[str] = None,
+        duration: int = 0
+    ) -> Optional[Lesson]:
+        """Dars videosini yangilash"""
+        async with async_session() as session:
+            result = await session.execute(
+                select(Lesson).where(Lesson.id == lesson_id)
+            )
+            lesson = result.scalar_one_or_none()
+            
+            if lesson:
+                if video_file_id:
+                    lesson.video_file_id = video_file_id
+                if video_url:
+                    lesson.video_url = video_url
+                if duration > 0:
+                    lesson.duration = duration
+                
+                await session.commit()
+                await session.refresh(lesson)
+                
+                # Kurs davomiyligini yangilash
+                await self._update_course_duration(session, lesson.course_id)
+            
+            return lesson
+    
+    async def delete_lesson(self, lesson_id: int) -> bool:
+        """Darsni o'chirish"""
+        async with async_session() as session:
+            result = await session.execute(
+                select(Lesson).where(Lesson.id == lesson_id)
+            )
+            lesson = result.scalar_one_or_none()
+            
+            if lesson:
+                course_id = lesson.course_id
+                await session.delete(lesson)
+                await session.commit()
+                
+                # Kurs davomiyligini yangilash
+                await self._update_course_duration(session, course_id)
+                return True
+            
+            return False
 
 
 class PaymentRepository:

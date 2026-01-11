@@ -1,11 +1,18 @@
-from typing import List
-from fastapi import APIRouter, HTTPException, Header
+from typing import List, Optional
+from fastapi import APIRouter, HTTPException, Header, UploadFile, File, Form
 from pydantic import BaseModel
+import os
+import uuid
+import aiofiles
 
-from database.repositories import UserRepository, CourseRepository, PaymentRepository
+from database.repositories import UserRepository, CourseRepository, PaymentRepository, LessonRepository
 from config import config
 
 router = APIRouter()
+
+# Upload papkasi
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 def check_admin(telegram_id: int) -> bool:
@@ -127,3 +134,244 @@ async def get_users(
             for user in users
         ]
     }
+
+
+def get_telegram_id_from_header(x_telegram_init_data: str) -> int:
+    """Header'dan telegram_id olish"""
+    import json
+    from urllib.parse import unquote
+    
+    try:
+        data_parts = dict(x.split('=') for x in x_telegram_init_data.split('&'))
+        user_data = json.loads(unquote(data_parts.get('user', '{}')))
+        return user_data.get('id')
+    except:
+        raise HTTPException(status_code=400, detail="Invalid init data format")
+
+
+@router.get("/courses")
+async def get_all_courses(
+    x_telegram_init_data: str = Header(..., alias="X-Telegram-Init-Data")
+):
+    """Admin uchun barcha kurslar"""
+    
+    telegram_id = get_telegram_id_from_header(x_telegram_init_data)
+    if not check_admin(telegram_id):
+        raise HTTPException(status_code=403, detail="Ruxsat yo'q")
+    
+    course_repo = CourseRepository()
+    courses = await course_repo.get_all_courses()
+    
+    return {
+        "courses": [
+            {
+                "id": course.id,
+                "title": course.title,
+                "description": course.description,
+                "price": course.price,
+                "stars_price": course.stars_price,
+                "ton_price": getattr(course, 'ton_price', 0),
+                "thumbnail": course.thumbnail,
+                "category": course.category,
+                "is_active": course.is_active,
+                "lessons_count": len(course.lessons) if course.lessons else 0,
+                "created_at": course.created_at.isoformat()
+            }
+            for course in courses
+        ]
+    }
+
+
+@router.get("/courses/{course_id}")
+async def get_course_detail(
+    course_id: int,
+    x_telegram_init_data: str = Header(..., alias="X-Telegram-Init-Data")
+):
+    """Kurs detallari - darslar bilan"""
+    
+    telegram_id = get_telegram_id_from_header(x_telegram_init_data)
+    if not check_admin(telegram_id):
+        raise HTTPException(status_code=403, detail="Ruxsat yo'q")
+    
+    course_repo = CourseRepository()
+    course = await course_repo.get_course_by_id(course_id)
+    
+    if not course:
+        raise HTTPException(status_code=404, detail="Kurs topilmadi")
+    
+    return {
+        "id": course.id,
+        "title": course.title,
+        "description": course.description,
+        "price": course.price,
+        "stars_price": course.stars_price,
+        "ton_price": getattr(course, 'ton_price', 0),
+        "thumbnail": course.thumbnail,
+        "category": course.category,
+        "is_active": course.is_active,
+        "lessons": [
+            {
+                "id": lesson.id,
+                "title": lesson.title,
+                "description": lesson.description,
+                "order": lesson.order,
+                "duration": lesson.duration,
+                "is_free": lesson.is_free,
+                "video_file_id": lesson.video_file_id,
+                "has_video": bool(lesson.video_file_id or lesson.video_url)
+            }
+            for lesson in (course.lessons or [])
+        ]
+    }
+
+
+class LessonCreateRequest(BaseModel):
+    title: str
+    description: Optional[str] = None
+    order: int = 0
+    duration: int = 0
+    is_free: bool = False
+
+
+@router.post("/courses/{course_id}/lessons")
+async def create_lesson(
+    course_id: int,
+    request: LessonCreateRequest,
+    x_telegram_init_data: str = Header(..., alias="X-Telegram-Init-Data")
+):
+    """Kursga yangi dars qo'shish"""
+    
+    telegram_id = get_telegram_id_from_header(x_telegram_init_data)
+    if not check_admin(telegram_id):
+        raise HTTPException(status_code=403, detail="Ruxsat yo'q")
+    
+    # Kurs mavjudligini tekshirish
+    course_repo = CourseRepository()
+    course = await course_repo.get_course_by_id(course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Kurs topilmadi")
+    
+    # Order avtomatik aniqlash
+    order = request.order
+    if order == 0 and course.lessons:
+        order = max(l.order for l in course.lessons) + 1
+    elif order == 0:
+        order = 1
+    
+    lesson_repo = LessonRepository()
+    lesson = await lesson_repo.create_lesson(
+        course_id=course_id,
+        title=request.title,
+        description=request.description,
+        order=order,
+        duration=request.duration,
+        is_free=request.is_free
+    )
+    
+    return {"success": True, "lesson_id": lesson.id, "order": order}
+
+
+@router.post("/courses/{course_id}/thumbnail")
+async def upload_thumbnail(
+    course_id: int,
+    file: UploadFile = File(...),
+    x_telegram_init_data: str = Header(..., alias="X-Telegram-Init-Data")
+):
+    """Kursga thumbnail yuklash"""
+    
+    telegram_id = get_telegram_id_from_header(x_telegram_init_data)
+    if not check_admin(telegram_id):
+        raise HTTPException(status_code=403, detail="Ruxsat yo'q")
+    
+    # Fayl turini tekshirish
+    allowed_types = ["image/jpeg", "image/png", "image/webp"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Faqat JPG, PNG, WEBP formatlar ruxsat etilgan")
+    
+    # Fayl nomini yaratish
+    ext = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
+    filename = f"course_{course_id}_{uuid.uuid4().hex[:8]}.{ext}"
+    filepath = os.path.join(UPLOAD_DIR, filename)
+    
+    # Faylni saqlash
+    async with aiofiles.open(filepath, 'wb') as f:
+        content = await file.read()
+        await f.write(content)
+    
+    # Database'ni yangilash
+    course_repo = CourseRepository()
+    thumbnail_url = f"/uploads/{filename}"
+    await course_repo.update_course_thumbnail(course_id, thumbnail_url)
+    
+    return {"success": True, "thumbnail": thumbnail_url}
+
+
+class VideoLinkRequest(BaseModel):
+    video_file_id: Optional[str] = None
+    video_url: Optional[str] = None
+    duration: int = 0
+
+
+@router.post("/lessons/{lesson_id}/video")
+async def set_lesson_video(
+    lesson_id: int,
+    request: VideoLinkRequest,
+    x_telegram_init_data: str = Header(..., alias="X-Telegram-Init-Data")
+):
+    """Darsga video qo'shish (Telegram file_id yoki URL)"""
+    
+    telegram_id = get_telegram_id_from_header(x_telegram_init_data)
+    if not check_admin(telegram_id):
+        raise HTTPException(status_code=403, detail="Ruxsat yo'q")
+    
+    if not request.video_file_id and not request.video_url:
+        raise HTTPException(status_code=400, detail="video_file_id yoki video_url kerak")
+    
+    lesson_repo = LessonRepository()
+    lesson = await lesson_repo.get_lesson_by_id(lesson_id)
+    
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Dars topilmadi")
+    
+    await lesson_repo.update_lesson_video(
+        lesson_id=lesson_id,
+        video_file_id=request.video_file_id,
+        video_url=request.video_url,
+        duration=request.duration
+    )
+    
+    return {"success": True, "lesson_id": lesson_id}
+
+
+@router.delete("/courses/{course_id}")
+async def delete_course(
+    course_id: int,
+    x_telegram_init_data: str = Header(..., alias="X-Telegram-Init-Data")
+):
+    """Kursni o'chirish"""
+    
+    telegram_id = get_telegram_id_from_header(x_telegram_init_data)
+    if not check_admin(telegram_id):
+        raise HTTPException(status_code=403, detail="Ruxsat yo'q")
+    
+    course_repo = CourseRepository()
+    await course_repo.delete_course(course_id)
+    
+    return {"success": True}
+
+
+@router.delete("/lessons/{lesson_id}")
+async def delete_lesson(
+    lesson_id: int,
+    x_telegram_init_data: str = Header(..., alias="X-Telegram-Init-Data")
+):
+    """Darsni o'chirish"""
+    
+    telegram_id = get_telegram_id_from_header(x_telegram_init_data)
+    if not check_admin(telegram_id):
+        raise HTTPException(status_code=403, detail="Ruxsat yo'q")
+    
+    lesson_repo = LessonRepository()
+    await lesson_repo.delete_lesson(lesson_id)
+    
+    return {"success": True}
