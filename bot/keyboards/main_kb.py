@@ -11,30 +11,36 @@ from config import config
 
 
 def get_main_keyboard() -> ReplyKeyboardMarkup:
-    """Asosiy klaviatura"""
+    """Asosiy klaviatura - Professional dizayn"""
     
     builder = ReplyKeyboardBuilder()
-    builder.button(text="📚 Kurslar", web_app=WebAppInfo(url=f"{config.mini_app_url}/courses"))
-    builder.button(text="📖 Mening kurslarim")
-    builder.button(text="👤 Profil")
-    builder.button(text="❓ Yordam")
-    builder.adjust(2)
+    # 1-qator: Kurslarni ko'rish (Mini App)
+    builder.button(text="📚 Kurslarni ko'rish", web_app=WebAppInfo(url=config.mini_app_url))
+    # 2-qator: Mening kurslarim va Profil
+    builder.button(text="🎓 Mening kurslarim", web_app=WebAppInfo(url=f"{config.mini_app_url}/my-courses"))
+    builder.button(text="👤 Profil", web_app=WebAppInfo(url=f"{config.mini_app_url}/profile"))
+    # 3-qator: Qo'shimcha
+    builder.button(text="💬 Qo'llab-quvvatlash")
+    builder.button(text="📢 Kanal")
+    builder.adjust(1, 2, 2)
     
     return builder.as_markup(resize_keyboard=True)
 
 
-def get_mini_app_keyboard(page: str = "") -> InlineKeyboardMarkup:
-    """Mini App ochish tugmasi"""
-    
-    url = config.mini_app_url
-    if page:
-        url = f"{url}/{page}"
+def get_start_inline_keyboard() -> InlineKeyboardMarkup:
+    """Start xabaridagi inline tugmalar"""
     
     builder = InlineKeyboardBuilder()
     builder.button(
-        text="🚀 Mini App'ni ochish",
-        web_app=WebAppInfo(url=url)
+        text="🚀 Kurslarni ko'rish",
+        web_app=WebAppInfo(url=config.mini_app_url)
     )
+    builder.button(
+        text="🎓 Mening kurslarim",
+        web_app=WebAppInfo(url=f"{config.mini_app_url}/my-courses")
+    )
+    builder.button(text="📢 Kanalga obuna bo'lish", url="https://t.me/daromatx")
+    builder.adjust(1, 1, 1)
     
     return builder.as_markup()
 

@@ -4,7 +4,7 @@ from aiogram.types import Message, CallbackQuery, LabeledPrice
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from database.repositories import UserRepository, CourseRepository
-from keyboards.main_kb import get_main_keyboard, get_mini_app_keyboard
+from keyboards.main_kb import get_main_keyboard, get_start_inline_keyboard
 
 router = Router()
 
@@ -64,22 +64,113 @@ async def cmd_start_normal(message: Message):
     )
     
     welcome_text = f"""
-🎓 <b>DAROMATX Academy</b>ga xush kelibsiz!
+🎓 <b>DAROMATX Academy</b>
 
-Salom, <b>{message.from_user.first_name}</b>! 👋
+Assalomu alaykum, <b>{message.from_user.first_name}</b>! 👋
 
-Bu yerda siz:
-📚 Professional kurslarni sotib olishingiz
-🎥 Video darslarni ko'rishingiz
-📜 Sertifikat olishingiz mumkin!
+Bizning platformada:
+• 📚 Professional video kurslar
+• 🎯 Amaliy bilimlar
+• 📜 Sertifikatlar
+• 💬 Mentor yordami
 
-⬇️ Boshlash uchun quyidagi tugmani bosing:
+<i>O'z sohasida professional bo'ling!</i>
 """
     
     await message.answer(
         text=welcome_text,
         reply_markup=get_main_keyboard()
     )
+    
+    # Inline tugmalar bilan qo'shimcha xabar
+    await message.answer(
+        text="⬇️ Boshlash uchun quyidagilardan birini tanlang:",
+        reply_markup=get_start_inline_keyboard()
+    )
+
+
+# Qo'llab-quvvatlash tugmasi handler
+@router.message(F.text == "💬 Qo'llab-quvvatlash")
+async def support_handler(message: Message):
+    """Qo'llab-quvvatlash"""
+    
+    support_text = """
+💬 <b>Qo'llab-quvvatlash</b>
+
+Savollaringiz bo'lsa, biz bilan bog'laning:
+
+📩 Admin: @daromatx_admin
+📧 Email: support@daromatx.uz
+⏰ Ish vaqti: 9:00 - 21:00
+
+Yoki quyidagi savollar bo'yicha yordam oling:
+
+❓ <b>Ko'p so'raladigan savollar:</b>
+• To'lov qanday amalga oshiriladi?
+• Kurslarni qanday ko'raman?
+• Sertifikat qachon beriladi?
+"""
+    
+    from aiogram.utils.keyboard import InlineKeyboardBuilder
+    builder = InlineKeyboardBuilder()
+    builder.button(text="📩 Admin bilan bog'lanish", url="https://t.me/daromatx_admin")
+    builder.button(text="❓ Ko'p so'raladigan savollar", callback_data="faq")
+    builder.adjust(1)
+    
+    await message.answer(text=support_text, reply_markup=builder.as_markup())
+
+
+# Kanal tugmasi handler
+@router.message(F.text == "📢 Kanal")
+async def channel_handler(message: Message):
+    """Kanal haqida ma'lumot"""
+    
+    channel_text = """
+📢 <b>DAROMATX rasmiy kanali</b>
+
+Kanalimizga obuna bo'ling va:
+• 🎁 Maxsus chegirmalardan xabardor bo'ling
+• 📚 Bepul darslarni oling
+• 💡 Foydali ma'lumotlarni bilib turing
+• 🔔 Yangi kurslardan birinchi bo'lib xabar toping
+"""
+    
+    from aiogram.utils.keyboard import InlineKeyboardBuilder
+    builder = InlineKeyboardBuilder()
+    builder.button(text="📢 Kanalga obuna bo'lish", url="https://t.me/daromatx")
+    builder.button(text="📣 Instagram", url="https://instagram.com/daromatx")
+    builder.button(text="🎬 YouTube", url="https://youtube.com/@daromatx")
+    builder.adjust(1)
+    
+    await message.answer(text=channel_text, reply_markup=builder.as_markup())
+
+
+# FAQ callback
+@router.callback_query(F.data == "faq")
+async def faq_callback(callback: CallbackQuery):
+    """Ko'p so'raladigan savollar"""
+    
+    faq_text = """
+❓ <b>Ko'p so'raladigan savollar</b>
+
+<b>1. To'lov qanday amalga oshiriladi?</b>
+Kursni tanlang → To'lov usulini tanlang (Stars, Click, Payme, TON) → To'lovni tasdiqlang.
+
+<b>2. Kurslarni qanday ko'raman?</b>
+"Mening kurslarim" bo'limiga o'ting → Kursni tanlang → Darslarni ko'ring.
+
+<b>3. Sertifikat qachon beriladi?</b>
+Kursni 100% tugatganingizda sertifikat avtomatik beriladi.
+
+<b>4. Pulni qaytarib olsam bo'ladimi?</b>
+Kursning 20% dan ko'prog'ini ko'rmagan bo'lsangiz, 3 kun ichida pulni qaytaramiz.
+
+<b>5. Darslar qancha vaqt ochiq turadi?</b>
+Bir marta sotib olgan kurslaringiz umrbod sizniki!
+"""
+    
+    await callback.message.edit_text(text=faq_text)
+    await callback.answer()
 
 
 @router.message(Command("help"))
@@ -89,40 +180,18 @@ async def cmd_help(message: Message):
     help_text = """
 📖 <b>Yordam</b>
 
-🔹 /start - Botni qayta ishga tushirish
-🔹 /courses - Kurslar ro'yxati
-🔹 /my_courses - Mening kurslarim
-🔹 /profile - Profil
-🔹 /help - Yordam
+<b>🔹 Asosiy komandalar:</b>
+/start - Botni qayta ishga tushirish
+/help - Yordam
 
-❓ Savollar bo'lsa: @daromatx_support
+<b>🔹 Tugmalar:</b>
+📚 Kurslarni ko'rish - Barcha kurslar
+🎓 Mening kurslarim - Sotib olingan kurslar
+👤 Profil - Shaxsiy kabinet
+💬 Qo'llab-quvvatlash - Yordam olish
+📢 Kanal - Rasmiy kanal
+
+<b>❓ Savol bo'lsa:</b> @daromatx_admin
 """
     
     await message.answer(help_text)
-
-
-@router.message(F.text == "📚 Kurslar")
-async def show_courses_button(message: Message):
-    """Kurslar tugmasi"""
-    await message.answer(
-        "🎓 Kurslarni ko'rish uchun Mini App'ni oching:",
-        reply_markup=get_mini_app_keyboard("courses")
-    )
-
-
-@router.message(F.text == "👤 Profil")
-async def show_profile_button(message: Message):
-    """Profil tugmasi"""
-    await message.answer(
-        "👤 Profilingizni ko'rish uchun Mini App'ni oching:",
-        reply_markup=get_mini_app_keyboard("profile")
-    )
-
-
-@router.message(F.text == "📖 Mening kurslarim")
-async def show_my_courses_button(message: Message):
-    """Mening kurslarim tugmasi"""
-    await message.answer(
-        "📖 Sotib olingan kurslarni ko'rish:",
-        reply_markup=get_mini_app_keyboard("my-courses")
-    )
