@@ -33,10 +33,12 @@ export interface Course {
   duration: number
   is_active: boolean
   lessons_count: number
+  is_purchased?: boolean
 }
 
 export interface CourseDetail extends Course {
   lessons: Lesson[]
+  is_purchased: boolean
 }
 
 export interface Lesson {

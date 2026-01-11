@@ -1,8 +1,10 @@
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Header
 from pydantic import BaseModel
+import json
+from urllib.parse import unquote
 
-from database.repositories import CourseRepository
+from database.repositories import CourseRepository, UserRepository
 
 router = APIRouter()
 
@@ -30,6 +32,7 @@ class CourseResponse(BaseModel):
     duration: int
     is_active: bool
     lessons_count: int = 0
+    is_purchased: bool = False
     
     class Config:
         from_attributes = True
@@ -90,13 +93,32 @@ async def get_categories():
 
 
 @router.get("/{course_id}", response_model=CourseDetailResponse)
-async def get_course(course_id: int):
+async def get_course(
+    course_id: int,
+    x_telegram_init_data: Optional[str] = Header(None, alias="X-Telegram-Init-Data")
+):
     """Bitta kursni olish"""
     course_repo = CourseRepository()
     course = await course_repo.get_course_by_id(course_id)
     
     if not course:
         raise HTTPException(status_code=404, detail="Kurs topilmadi")
+    
+    # Foydalanuvchi sotib olganmi tekshirish
+    is_purchased = False
+    if x_telegram_init_data:
+        try:
+            data_parts = dict(x.split('=') for x in x_telegram_init_data.split('&'))
+            user_data = json.loads(unquote(data_parts.get('user', '{}')))
+            telegram_id = user_data.get('id')
+            
+            if telegram_id:
+                user_repo = UserRepository()
+                user = await user_repo.get_user_by_telegram_id(telegram_id)
+                if user and user.purchased_courses:
+                    is_purchased = any(pc.course_id == course_id for pc in user.purchased_courses)
+        except:
+            pass
     
     lessons = []
     for lesson in course.lessons:
@@ -120,5 +142,6 @@ async def get_course(course_id: int):
         duration=course.duration,
         is_active=course.is_active,
         lessons_count=len(lessons),
-        lessons=lessons
+        lessons=lessons,
+        is_purchased=is_purchased
     )

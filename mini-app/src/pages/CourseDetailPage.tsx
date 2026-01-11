@@ -30,9 +30,18 @@ export default function CourseDetailPage() {
 
   useEffect(() => {
     if (course) {
-      showMainButton(`Sotib olish - ${formatPrice(course.price)} so'm`, () => {
-        setShowPaymentModal(true)
-      })
+      if (course.is_purchased) {
+        showMainButton('📚 Darslarni ko\'rish', () => {
+          // Birinchi darsga o'tish
+          if (course.lessons && course.lessons.length > 0) {
+            navigate(`/lesson/${course.lessons[0].id}`)
+          }
+        })
+      } else {
+        showMainButton(`Sotib olish - ${formatPrice(course.price)} so'm`, () => {
+          setShowPaymentModal(true)
+        })
+      }
     }
   }, [course])
 
@@ -159,16 +168,25 @@ export default function CourseDetailPage() {
           </p>
           
           {/* Price */}
-          <div className="flex items-center justify-between p-4 bg-telegram-secondary rounded-xl mb-4">
-            <div>
-              <span className="text-2xl font-bold text-telegram-button">
-                {formatPrice(course.price)} so'm
-              </span>
-              <span className="block text-telegram-hint text-sm">
-                ⭐ {course.stars_price} Telegram Stars
-              </span>
+          {!course.is_purchased && (
+            <div className="flex items-center justify-between p-4 bg-telegram-secondary rounded-xl mb-4">
+              <div>
+                <span className="text-2xl font-bold text-telegram-button">
+                  {formatPrice(course.price)} so'm
+                </span>
+                <span className="block text-telegram-hint text-sm">
+                  ⭐ {course.stars_price} Telegram Stars
+                </span>
+              </div>
             </div>
-          </div>
+          )}
+          
+          {course.is_purchased && (
+            <div className="flex items-center gap-2 p-4 bg-green-100 rounded-xl mb-4">
+              <span className="text-2xl">✅</span>
+              <span className="text-green-700 font-medium">Siz bu kursni sotib olgansiz</span>
+            </div>
+          )}
         </div>
 
         {/* Lessons */}
@@ -178,36 +196,39 @@ export default function CourseDetailPage() {
           </h2>
           
           <div className="space-y-2">
-            {course.lessons.map((lesson, index) => (
-              <div
-                key={lesson.id}
-                className={`p-4 bg-telegram-bg rounded-xl flex items-center gap-3 ${
-                  lesson.is_free ? 'cursor-pointer hover:bg-telegram-secondary' : 'opacity-70'
-                }`}
-                onClick={() => lesson.is_free && navigate(`/lesson/${lesson.id}`)}
-              >
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
-                  lesson.is_free ? 'bg-green-100 text-green-600' : 'bg-telegram-secondary text-telegram-hint'
-                }`}>
-                  {index + 1}
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-medium text-telegram-text">{lesson.title}</h3>
-                  <span className="text-telegram-hint text-sm">
-                    {formatDuration(lesson.duration)}
+            {course.lessons.map((lesson, index) => {
+              const canWatch = course.is_purchased || lesson.is_free
+              return (
+                <div
+                  key={lesson.id}
+                  className={`p-4 bg-telegram-bg rounded-xl flex items-center gap-3 ${
+                    canWatch ? 'cursor-pointer hover:bg-telegram-secondary' : 'opacity-70'
+                  }`}
+                  onClick={() => canWatch && navigate(`/lesson/${lesson.id}`)}
+                >
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
+                    canWatch ? 'bg-green-100 text-green-600' : 'bg-telegram-secondary text-telegram-hint'
+                  }`}>
+                    {index + 1}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-medium text-telegram-text">{lesson.title}</h3>
+                    <span className="text-telegram-hint text-sm">
+                      {formatDuration(lesson.duration)}
+                    </span>
+                  </div>
+                  <span className="text-xl">
+                    {canWatch ? '▶️' : '🔒'}
                   </span>
                 </div>
-                <span className="text-xl">
-                  {lesson.is_free ? '▶️' : '🔒'}
-                </span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </div>
 
       {/* Payment Modal */}
-      {showPaymentModal && (
+      {showPaymentModal && !course.is_purchased && (
         <div className="fixed inset-0 bg-black/50 flex items-end z-50" onClick={() => setShowPaymentModal(false)}>
           <div 
             className="w-full bg-telegram-bg rounded-t-3xl p-6 animate-slide-up"
