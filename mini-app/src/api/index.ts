@@ -139,11 +139,11 @@ export const paymentsApi = {
 }
 
 export const adminApi = {
-  checkAdmin: () =>
-    api.get<{ is_admin: boolean }>('/admin/check'),
-  
   getStats: () => 
     api.get('/admin/stats'),
+  
+  getAnalytics: () =>
+    api.get<Analytics>('/admin/analytics'),
   
   createCourse: (data: { title: string; description: string; price: number; stars_price: number; ton_price: number; category: string }) =>
     api.post('/admin/courses', data),
@@ -206,6 +206,26 @@ export interface AdminLesson {
 
 export interface AdminCourseDetail extends AdminCourse {
   lessons: AdminLesson[]
+}
+
+// Analytics type
+export interface Analytics {
+  total_users: number
+  total_courses: number
+  total_lessons: number
+  total_payments: number
+  today_users: number
+  today_payments: number
+  today_revenue: number
+  weekly_users: number
+  weekly_payments: number
+  weekly_revenue: number
+  monthly_users: number
+  monthly_payments: number
+  monthly_revenue: number
+  users_growth: number
+  revenue_growth: number
+  top_courses: { id: number; title: string; sales: number }[]
 }
 
 export default api

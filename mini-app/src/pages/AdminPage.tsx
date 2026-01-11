@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { adminApi, AdminCourse, AdminCourseDetail, AdminLesson } from '../api'
+import { adminApi, AdminCourse, AdminCourseDetail, AdminLesson, Analytics } from '../api'
 import { useTelegram } from '../context/TelegramContext'
 import Loading from '../components/Loading'
 
@@ -17,6 +17,7 @@ export default function AdminPage() {
   const { showBackButton, hideBackButton, showAlert, showConfirm } = useTelegram()
   
   const [stats, setStats] = useState<Stats | null>(null)
+  const [analytics, setAnalytics] = useState<Analytics | null>(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('dashboard')
   
@@ -72,8 +73,12 @@ export default function AdminPage() {
 
   const loadStats = async () => {
     try {
-      const res = await adminApi.getStats()
-      setStats(res.data)
+      const [statsRes, analyticsRes] = await Promise.all([
+        adminApi.getStats(),
+        adminApi.getAnalytics()
+      ])
+      setStats(statsRes.data)
+      setAnalytics(analyticsRes.data)
     } catch (error: any) {
       console.error('Error loading stats:', error)
       if (error.response?.status === 403) {
@@ -371,25 +376,107 @@ export default function AdminPage() {
   }
 
   // Dashboard Tab (default)
+  const formatMoney = (amount: number) => {
+    if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M`
+    if (amount >= 1000) return `${(amount / 1000).toFixed(0)}K`
+    return amount.toString()
+  }
+
   return (
     <div className="min-h-screen p-4">
       <h1 className="text-2xl font-bold text-telegram-text mb-6">🔐 Admin Panel</h1>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-blue-100 rounded-2xl p-4 text-center">
-          <span className="text-2xl font-bold text-blue-600 block">{stats?.users_count || 0}</span>
-          <span className="text-blue-600 text-sm">Foydalanuvchilar</span>
+      {/* Main Stats */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-center text-white">
+          <span className="text-2xl font-bold block">{stats?.users_count || 0}</span>
+          <span className="text-xs opacity-90">Foydalanuvchilar</span>
         </div>
-        <div className="bg-green-100 rounded-2xl p-4 text-center">
-          <span className="text-2xl font-bold text-green-600 block">{stats?.courses_count || 0}</span>
-          <span className="text-green-600 text-sm">Kurslar</span>
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-4 text-center text-white">
+          <span className="text-2xl font-bold block">{stats?.courses_count || 0}</span>
+          <span className="text-xs opacity-90">Kurslar</span>
         </div>
-        <div className="bg-purple-100 rounded-2xl p-4 text-center">
-          <span className="text-2xl font-bold text-purple-600 block">{stats?.today_users || 0}</span>
-          <span className="text-purple-600 text-sm">Bugun</span>
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-4 text-center text-white">
+          <span className="text-2xl font-bold block">{analytics?.total_lessons || 0}</span>
+          <span className="text-xs opacity-90">Darslar</span>
         </div>
       </div>
+
+      {/* Growth Stats */}
+      {analytics && (
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="bg-telegram-bg rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-telegram-hint text-xs">Foydalanuvchi o'sishi</span>
+              <span className={`text-xs font-bold ${analytics.users_growth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                {analytics.users_growth >= 0 ? '↑' : '↓'} {Math.abs(analytics.users_growth)}%
+              </span>
+            </div>
+            <div className="text-lg font-bold text-telegram-text">+{analytics.weekly_users} haftalik</div>
+          </div>
+          <div className="bg-telegram-bg rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-telegram-hint text-xs">Daromad o'sishi</span>
+              <span className={`text-xs font-bold ${analytics.revenue_growth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                {analytics.revenue_growth >= 0 ? '↑' : '↓'} {Math.abs(analytics.revenue_growth)}%
+              </span>
+            </div>
+            <div className="text-lg font-bold text-telegram-text">{formatMoney(analytics.weekly_revenue)} so'm</div>
+          </div>
+        </div>
+      )}
+
+      {/* Period Stats */}
+      {analytics && (
+        <div className="bg-telegram-bg rounded-2xl p-4 mb-4">
+          <h3 className="font-bold text-telegram-text mb-3">📊 Statistika</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center py-2 border-b border-telegram-secondary">
+              <span className="text-telegram-hint text-sm">Bugun</span>
+              <div className="text-right">
+                <span className="text-telegram-text font-medium">{analytics.today_users} foydalanuvchi</span>
+                <span className="text-green-500 text-sm ml-2">• {analytics.today_payments} to'lov</span>
+              </div>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-telegram-secondary">
+              <span className="text-telegram-hint text-sm">Haftalik</span>
+              <div className="text-right">
+                <span className="text-telegram-text font-medium">{analytics.weekly_users} foydalanuvchi</span>
+                <span className="text-green-500 text-sm ml-2">• {formatMoney(analytics.weekly_revenue)}</span>
+              </div>
+            </div>
+            <div className="flex justify-between items-center py-2">
+              <span className="text-telegram-hint text-sm">Oylik</span>
+              <div className="text-right">
+                <span className="text-telegram-text font-medium">{analytics.monthly_users} foydalanuvchi</span>
+                <span className="text-green-500 text-sm ml-2">• {formatMoney(analytics.monthly_revenue)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Top Courses */}
+      {analytics && analytics.top_courses.length > 0 && (
+        <div className="bg-telegram-bg rounded-2xl p-4 mb-4">
+          <h3 className="font-bold text-telegram-text mb-3">🏆 Top Kurslar</h3>
+          <div className="space-y-2">
+            {analytics.top_courses.map((course, index) => (
+              <div key={course.id} className="flex items-center gap-3 py-2">
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                  index === 0 ? 'bg-yellow-500 text-white' : 
+                  index === 1 ? 'bg-gray-400 text-white' : 
+                  index === 2 ? 'bg-amber-600 text-white' : 'bg-telegram-secondary text-telegram-text'
+                }`}>
+                  {index + 1}
+                </span>
+                <span className="flex-1 text-telegram-text text-sm truncate">{course.title}</span>
+                <span className="text-telegram-hint text-xs">{course.sales} sotuv</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="bg-telegram-bg rounded-2xl overflow-hidden mb-6">

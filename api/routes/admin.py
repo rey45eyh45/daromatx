@@ -26,6 +26,36 @@ class StatsResponse(BaseModel):
     today_users: int
 
 
+class AnalyticsResponse(BaseModel):
+    # Asosiy statistika
+    total_users: int
+    total_courses: int
+    total_lessons: int
+    total_payments: int
+    
+    # Bugungi
+    today_users: int
+    today_payments: int
+    today_revenue: float
+    
+    # Haftalik
+    weekly_users: int
+    weekly_payments: int
+    weekly_revenue: float
+    
+    # Oylik
+    monthly_users: int
+    monthly_payments: int
+    monthly_revenue: float
+    
+    # O'sish foizlari
+    users_growth: float  # Haftalik o'sish %
+    revenue_growth: float  # Haftalik daromad o'sishi %
+    
+    # Top kurslar
+    top_courses: list
+
+
 class CourseCreateRequest(BaseModel):
     title: str
     description: str
@@ -33,25 +63,6 @@ class CourseCreateRequest(BaseModel):
     stars_price: int = 100
     ton_price: float = 0
     category: str = "Boshqa"
-
-
-@router.get("/check")
-async def check_is_admin(
-    x_telegram_init_data: str = Header(..., alias="X-Telegram-Init-Data")
-):
-    """Admin ekanligini tekshirish"""
-    
-    import json
-    from urllib.parse import unquote
-    
-    try:
-        data_parts = dict(x.split('=') for x in x_telegram_init_data.split('&'))
-        user_data = json.loads(unquote(data_parts.get('user', '{}')))
-        telegram_id = user_data.get('id')
-    except:
-        raise HTTPException(status_code=400, detail="Invalid init data format")
-    
-    return {"is_admin": check_admin(telegram_id)}
 
 
 @router.get("/stats", response_model=StatsResponse)
@@ -80,6 +91,86 @@ async def get_stats(
         users_count=await user_repo.get_users_count(),
         courses_count=await course_repo.get_courses_count(),
         today_users=await user_repo.get_today_users_count()
+    )
+
+
+@router.get("/analytics", response_model=AnalyticsResponse)
+async def get_analytics(
+    x_telegram_init_data: str = Header(..., alias="X-Telegram-Init-Data")
+):
+    """Kengaytirilgan admin analitika"""
+    
+    import json
+    from urllib.parse import unquote
+    
+    try:
+        data_parts = dict(x.split('=') for x in x_telegram_init_data.split('&'))
+        user_data = json.loads(unquote(data_parts.get('user', '{}')))
+        telegram_id = user_data.get('id')
+    except:
+        raise HTTPException(status_code=400, detail="Invalid init data format")
+    
+    if not check_admin(telegram_id):
+        raise HTTPException(status_code=403, detail="Ruxsat yo'q")
+    
+    user_repo = UserRepository()
+    course_repo = CourseRepository()
+    payment_repo = PaymentRepository()
+    
+    # Asosiy statistika
+    total_users = await user_repo.get_users_count()
+    total_courses = await course_repo.get_courses_count()
+    total_lessons = await course_repo.get_lessons_count()
+    total_payments = await payment_repo.get_payments_count()
+    
+    # Bugungi
+    today_users = await user_repo.get_today_users_count()
+    today_stats = await payment_repo.get_today_payments_stats()
+    
+    # Haftalik
+    weekly_users = await user_repo.get_weekly_users_count()
+    weekly_stats = await payment_repo.get_weekly_payments_stats()
+    
+    # Oylik
+    monthly_users = await user_repo.get_monthly_users_count()
+    monthly_stats = await payment_repo.get_monthly_payments_stats()
+    
+    # O'sish hisoblash
+    prev_week_users = await user_repo.get_previous_week_users_count()
+    prev_week_revenue = await payment_repo.get_previous_week_revenue()
+    
+    users_growth = 0.0
+    if prev_week_users > 0:
+        users_growth = ((weekly_users - prev_week_users) / prev_week_users) * 100
+    elif weekly_users > 0:
+        users_growth = 100.0
+    
+    revenue_growth = 0.0
+    if prev_week_revenue > 0:
+        revenue_growth = ((weekly_stats["revenue"] - prev_week_revenue) / prev_week_revenue) * 100
+    elif weekly_stats["revenue"] > 0:
+        revenue_growth = 100.0
+    
+    # Top kurslar
+    top_courses = await course_repo.get_top_courses(5)
+    
+    return AnalyticsResponse(
+        total_users=total_users,
+        total_courses=total_courses,
+        total_lessons=total_lessons,
+        total_payments=total_payments,
+        today_users=today_users,
+        today_payments=today_stats["count"],
+        today_revenue=today_stats["revenue"],
+        weekly_users=weekly_users,
+        weekly_payments=weekly_stats["count"],
+        weekly_revenue=weekly_stats["revenue"],
+        monthly_users=monthly_users,
+        monthly_payments=monthly_stats["count"],
+        monthly_revenue=monthly_stats["revenue"],
+        users_growth=round(users_growth, 1),
+        revenue_growth=round(revenue_growth, 1),
+        top_courses=top_courses
     )
 
 

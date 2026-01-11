@@ -76,6 +76,43 @@ class UserRepository:
             )
             return list(result.scalars().all())
     
+    async def get_weekly_users_count(self) -> int:
+        """Haftalik foydalanuvchilar soni"""
+        async with async_session() as session:
+            from datetime import timedelta
+            week_ago = date.today() - timedelta(days=7)
+            result = await session.execute(
+                select(func.count(User.id))
+                .where(func.date(User.created_at) >= week_ago)
+            )
+            return result.scalar() or 0
+    
+    async def get_monthly_users_count(self) -> int:
+        """Oylik foydalanuvchilar soni"""
+        async with async_session() as session:
+            from datetime import timedelta
+            month_ago = date.today() - timedelta(days=30)
+            result = await session.execute(
+                select(func.count(User.id))
+                .where(func.date(User.created_at) >= month_ago)
+            )
+            return result.scalar() or 0
+    
+    async def get_previous_week_users_count(self) -> int:
+        """O'tgan haftalik foydalanuvchilar (o'sish hisoblash uchun)"""
+        async with async_session() as session:
+            from datetime import timedelta
+            week_ago = date.today() - timedelta(days=7)
+            two_weeks_ago = date.today() - timedelta(days=14)
+            result = await session.execute(
+                select(func.count(User.id))
+                .where(
+                    func.date(User.created_at) >= two_weeks_ago,
+                    func.date(User.created_at) < week_ago
+                )
+            )
+            return result.scalar() or 0
+    
     async def add_purchased_course(self, telegram_id: int, course_id: int) -> UserCourse:
         """Kursni sotib olish"""
         async with async_session() as session:
@@ -183,6 +220,29 @@ class CourseRepository:
         async with async_session() as session:
             result = await session.execute(select(func.count(Course.id)))
             return result.scalar() or 0
+    
+    async def get_lessons_count(self) -> int:
+        """Jami darslar soni"""
+        async with async_session() as session:
+            result = await session.execute(select(func.count(Lesson.id)))
+            return result.scalar() or 0
+    
+    async def get_top_courses(self, limit: int = 5) -> list:
+        """Top kurslar (eng ko'p sotilgan)"""
+        async with async_session() as session:
+            result = await session.execute(
+                select(
+                    Course.id,
+                    Course.title,
+                    func.count(UserCourse.id).label('sales_count')
+                )
+                .outerjoin(UserCourse, Course.id == UserCourse.course_id)
+                .group_by(Course.id, Course.title)
+                .order_by(func.count(UserCourse.id).desc())
+                .limit(limit)
+            )
+            rows = result.all()
+            return [{"id": r[0], "title": r[1], "sales": r[2]} for r in rows]
     
     async def update_course(self, course_id: int, **kwargs) -> Optional[Course]:
         """Kursni yangilash"""
@@ -446,3 +506,81 @@ class PaymentRepository:
                 await session.refresh(payment)
             
             return payment
+    
+    async def get_payments_count(self) -> int:
+        """Jami to'lovlar soni"""
+        async with async_session() as session:
+            result = await session.execute(
+                select(func.count(Payment.id))
+                .where(Payment.status == "completed")
+            )
+            return result.scalar() or 0
+    
+    async def get_today_payments_stats(self) -> dict:
+        """Bugungi to'lovlar statistikasi"""
+        async with async_session() as session:
+            today = date.today()
+            result = await session.execute(
+                select(
+                    func.count(Payment.id),
+                    func.coalesce(func.sum(Payment.amount), 0)
+                )
+                .where(
+                    Payment.status == "completed",
+                    func.date(Payment.created_at) == today
+                )
+            )
+            row = result.one()
+            return {"count": row[0] or 0, "revenue": float(row[1] or 0)}
+    
+    async def get_weekly_payments_stats(self) -> dict:
+        """Haftalik to'lovlar statistikasi"""
+        async with async_session() as session:
+            from datetime import timedelta
+            week_ago = date.today() - timedelta(days=7)
+            result = await session.execute(
+                select(
+                    func.count(Payment.id),
+                    func.coalesce(func.sum(Payment.amount), 0)
+                )
+                .where(
+                    Payment.status == "completed",
+                    func.date(Payment.created_at) >= week_ago
+                )
+            )
+            row = result.one()
+            return {"count": row[0] or 0, "revenue": float(row[1] or 0)}
+    
+    async def get_monthly_payments_stats(self) -> dict:
+        """Oylik to'lovlar statistikasi"""
+        async with async_session() as session:
+            from datetime import timedelta
+            month_ago = date.today() - timedelta(days=30)
+            result = await session.execute(
+                select(
+                    func.count(Payment.id),
+                    func.coalesce(func.sum(Payment.amount), 0)
+                )
+                .where(
+                    Payment.status == "completed",
+                    func.date(Payment.created_at) >= month_ago
+                )
+            )
+            row = result.one()
+            return {"count": row[0] or 0, "revenue": float(row[1] or 0)}
+    
+    async def get_previous_week_revenue(self) -> float:
+        """O'tgan haftalik daromad (o'sish hisoblash uchun)"""
+        async with async_session() as session:
+            from datetime import timedelta
+            week_ago = date.today() - timedelta(days=7)
+            two_weeks_ago = date.today() - timedelta(days=14)
+            result = await session.execute(
+                select(func.coalesce(func.sum(Payment.amount), 0))
+                .where(
+                    Payment.status == "completed",
+                    func.date(Payment.created_at) >= two_weeks_ago,
+                    func.date(Payment.created_at) < week_ago
+                )
+            )
+            return float(result.scalar() or 0)
