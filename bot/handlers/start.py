@@ -4,7 +4,7 @@ from aiogram.types import Message, CallbackQuery, LabeledPrice
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from database.repositories import UserRepository, CourseRepository
-from keyboards.main_kb import get_main_keyboard, get_start_inline_keyboard
+from keyboards.main_kb import get_main_keyboard
 
 router = Router()
 
@@ -75,17 +75,13 @@ Bizning platformada:
 • 💬 Mentor yordami
 
 <i>O'z sohasida professional bo'ling!</i>
+
+⬇️ Quyidagi tugmalardan foydalaning:
 """
     
     await message.answer(
         text=welcome_text,
         reply_markup=get_main_keyboard()
-    )
-    
-    # Inline tugmalar bilan qo'shimcha xabar
-    await message.answer(
-        text="⬇️ Boshlash uchun quyidagilardan birini tanlang:",
-        reply_markup=get_start_inline_keyboard()
     )
 
 
