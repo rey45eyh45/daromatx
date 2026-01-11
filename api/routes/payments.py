@@ -1,15 +1,18 @@
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
+import os
 
 from database.repositories import PaymentRepository, CourseRepository
 
 router = APIRouter()
 
+BOT_USERNAME = os.getenv("BOT_USERNAME", "daromatx_bot")
+
 
 class CreatePaymentRequest(BaseModel):
     course_id: int
-    payment_type: str  # click, payme, ton
+    payment_type: str  # stars, click, payme, ton
 
 
 class PaymentResponse(BaseModel):
@@ -20,6 +23,7 @@ class PaymentResponse(BaseModel):
     payment_type: str
     status: str
     payment_url: Optional[str] = None
+    invoice_url: Optional[str] = None
     
     class Config:
         from_attributes = True
@@ -54,16 +58,21 @@ async def create_payment(
     payment = await payment_repo.create_payment(
         user_telegram_id=telegram_id,
         course_id=request.course_id,
-        amount=course.price,
-        currency="UZS",
+        amount=course.price if request.payment_type != "stars" else course.stars_price,
+        currency="XTR" if request.payment_type == "stars" else "UZS",
         payment_type=request.payment_type,
         status="pending"
     )
     
     # To'lov URL yaratish
     payment_url = None
+    invoice_url = None
     
-    if request.payment_type == "click":
+    if request.payment_type == "stars":
+        # Telegram Stars - bot orqali invoice
+        invoice_url = f"https://t.me/{BOT_USERNAME}?start=buy_{request.course_id}"
+        payment_url = invoice_url
+    elif request.payment_type == "click":
         payment_url = f"https://my.click.uz/services/pay?service_id=YOUR_SERVICE&amount={int(course.price)}&transaction_param={payment.id}"
     elif request.payment_type == "payme":
         import base64
@@ -80,7 +89,8 @@ async def create_payment(
         currency=payment.currency,
         payment_type=payment.payment_type,
         status=payment.status,
-        payment_url=payment_url
+        payment_url=payment_url,
+        invoice_url=invoice_url
     )
 
 

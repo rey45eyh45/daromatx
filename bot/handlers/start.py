@@ -1,16 +1,58 @@
-from aiogram import Router, F
-from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, CallbackQuery
+from aiogram import Router, F, Bot
+from aiogram.filters import CommandStart, Command, CommandObject
+from aiogram.types import Message, CallbackQuery, LabeledPrice
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from database.repositories import UserRepository
+from database.repositories import UserRepository, CourseRepository
 from keyboards.main_kb import get_main_keyboard, get_mini_app_keyboard
 
 router = Router()
 
 
+@router.message(CommandStart(deep_link=True))
+async def cmd_start_deep_link(message: Message, command: CommandObject, bot: Bot):
+    """Start komandasi deep link bilan"""
+    
+    # Foydalanuvchini bazaga saqlash
+    user_repo = UserRepository()
+    await user_repo.create_or_update_user(
+        telegram_id=message.from_user.id,
+        username=message.from_user.username,
+        full_name=message.from_user.full_name
+    )
+    
+    args = command.args
+    
+    # Kurs sotib olish deep link
+    if args and args.startswith("buy_"):
+        course_id = int(args.replace("buy_", ""))
+        
+        course_repo = CourseRepository()
+        course = await course_repo.get_course_by_id(course_id)
+        
+        if not course:
+            await message.answer("❌ Kurs topilmadi!")
+            return
+        
+        # Telegram Stars invoice yuborish
+        await bot.send_invoice(
+            chat_id=message.from_user.id,
+            title=course.title,
+            description=course.description[:255] if course.description else "Kurs",
+            payload=f"course_{course_id}",
+            provider_token="",  # Stars uchun bo'sh
+            currency="XTR",  # Telegram Stars valyutasi
+            prices=[LabeledPrice(label=course.title, amount=course.stars_price)],
+            start_parameter=f"course_{course_id}"
+        )
+        return
+    
+    # Oddiy start
+    await cmd_start_normal(message)
+
+
 @router.message(CommandStart())
-async def cmd_start(message: Message):
+async def cmd_start_normal(message: Message):
     """Start komandasi"""
     
     # Foydalanuvchini bazaga saqlash

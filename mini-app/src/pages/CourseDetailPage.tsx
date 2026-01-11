@@ -65,27 +65,47 @@ export default function CourseDetailPage() {
     hapticFeedback('medium')
     
     try {
+      const tg = window.Telegram?.WebApp
+      
+      if (paymentType === 'stars') {
+        // Telegram Stars - bot orqali to'lov
+        const botUsername = import.meta.env.VITE_BOT_USERNAME || 'daromatx_bot'
+        const url = `https://t.me/${botUsername}?start=buy_${course.id}`
+        
+        if (tg) {
+          tg.openTelegramLink(url)
+          tg.close()
+        } else {
+          window.open(url, '_blank')
+        }
+        setShowPaymentModal(false)
+        return
+      }
+      
+      if (paymentType === 'ton') {
+        // TON Crypto to'lov
+        const tonAmount = (course.price / 50000).toFixed(2)
+        const walletAddress = import.meta.env.VITE_TON_WALLET || 'UQD...'
+        const url = `ton://transfer/${walletAddress}?amount=${Math.floor(parseFloat(tonAmount) * 1e9)}&text=course_${course.id}`
+        window.open(url, '_blank')
+        showAlert(`${tonAmount} TON yuborilgandan keyin kurs ochiladi.`)
+        setShowPaymentModal(false)
+        return
+      }
+      
+      // Click/Payme
       const res = await paymentsApi.create(course.id, paymentType)
       
       if (res.data.payment_url) {
-        // Open payment URL
-        const tg = window.Telegram?.WebApp
-        if (paymentType === 'stars' && tg) {
-          tg.openInvoice(res.data.payment_url, (status) => {
-            if (status === 'paid') {
-              showAlert('🎉 Tabriklaymiz! Kurs muvaffaqiyatli sotib olindi!')
-              navigate('/my-courses')
-            }
-          })
-        } else {
-          window.open(res.data.payment_url, '_blank')
-        }
+        window.open(res.data.payment_url, '_blank')
+      } else {
+        showAlert('To\'lov tizimi hozircha mavjud emas. Telegram Stars bilan to\'lang.')
       }
       
       setShowPaymentModal(false)
     } catch (error) {
       console.error('Payment error:', error)
-      showAlert('Xatolik yuz berdi. Qayta urinib ko\'ring.')
+      showAlert('Xatolik yuz berdi. Telegram Stars bilan to\'lab ko\'ring.')
     } finally {
       setPurchasing(false)
     }
