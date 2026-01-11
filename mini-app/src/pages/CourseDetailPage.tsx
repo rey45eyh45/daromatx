@@ -334,7 +334,7 @@ export default function CourseDetailPage() {
             
             <button
               onClick={() => setShowPaymentModal(false)}
-              className="w-full p-4 bg-telegram-secondary text-telegram-hint rounded-xl"
+              className="w-full p-4 bg-telegram-button text-white rounded-xl font-medium"
             >
               Bekor qilish
             </button>
@@ -373,21 +373,53 @@ export default function CourseDetailPage() {
             <div className="bg-telegram-secondary rounded-xl p-4 mb-4 text-sm">
               <div className="font-medium text-telegram-text mb-2">📋 Yo'riqnoma:</div>
               <ol className="list-decimal list-inside text-telegram-hint space-y-1">
-                <li>Quyidagi "Wallet ochish" tugmasini bosing</li>
-                <li>Comment qismiga: <code className="bg-purple-200 px-1 rounded">course_{course.id}</code></li>
+                <li>Quyidagi hamyonlardan birini tanlang</li>
+                <li>Comment qismiga: <code className="bg-purple-200 text-purple-700 px-2 py-0.5 rounded font-mono">course_{course.id}</code></li>
                 <li>To'lovni tasdiqlang</li>
                 <li>Bu yerga qaytib "Tekshirish" bosing</li>
               </ol>
             </div>
             
-            {/* Tugmalar */}
-            <div className="space-y-3">
+            {/* Wallet tugmalari */}
+            <div className="space-y-2 mb-4">
               <button
                 onClick={handleTonPayment}
+                className="w-full p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium flex items-center justify-center gap-2"
+              >
+                💎 TON Wallet (Universal)
+              </button>
+              
+              <button
+                onClick={() => {
+                  const tonAmount = (course.price / 50000).toFixed(2)
+                  const walletAddress = import.meta.env.VITE_TON_WALLET || 'UQD7hkW5-rC8EHHZAmMAnzhddHxexDQKx26ttycUq8hLKVSu'
+                  const tg = window.Telegram?.WebApp
+                  // Telegram ichidagi @wallet botiga yo'naltirish
+                  if (tg) {
+                    tg.openTelegramLink(`https://t.me/wallet?startattach=transfer_${walletAddress}_${Math.floor(parseFloat(tonAmount) * 1e9)}_course_${course.id}`)
+                  } else {
+                    window.open(`https://t.me/wallet`, '_blank')
+                  }
+                }}
+                className="w-full p-4 bg-gradient-to-r from-sky-500 to-cyan-500 text-white rounded-xl font-medium flex items-center justify-center gap-2"
+              >
+                📱 Telegram Wallet
+              </button>
+              
+              <button
+                onClick={() => {
+                  const tonAmount = (course.price / 50000).toFixed(2)
+                  const walletAddress = import.meta.env.VITE_TON_WALLET || 'UQD7hkW5-rC8EHHZAmMAnzhddHxexDQKx26ttycUq8hLKVSu'
+                  window.open(`https://app.tonkeeper.com/transfer/${walletAddress}?amount=${Math.floor(parseFloat(tonAmount) * 1e9)}&text=course_${course.id}`, '_blank')
+                }}
                 className="w-full p-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-medium flex items-center justify-center gap-2"
               >
-                💎 Wallet ochish (Tonkeeper)
+                🔷 Tonkeeper
               </button>
+            </div>
+            
+            {/* Tekshirish tugmasi */}
+            <div className="space-y-3">
               
               <button
                 onClick={verifyTonPayment}
@@ -408,7 +440,7 @@ export default function CourseDetailPage() {
               
               <button
                 onClick={() => setShowTonModal(false)}
-                className="w-full p-4 bg-telegram-secondary text-telegram-hint rounded-xl"
+                className="w-full p-4 bg-telegram-button text-white rounded-xl font-medium"
               >
                 Bekor qilish
               </button>
