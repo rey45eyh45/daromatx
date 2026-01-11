@@ -406,18 +406,7 @@ export default function CourseDetailPage() {
                 onClick={handleTonPayment}
                 className="w-full p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium flex items-center justify-center gap-2"
               >
-                � Istalgan TON Wallet
-              </button>
-              
-              <button
-                onClick={() => {
-                  const tonAmount = (course.price / 50000).toFixed(2)
-                  const walletAddress = import.meta.env.VITE_TON_WALLET || 'UQD7hkW5-rC8EHHZAmMAnzhddHxexDQKx26ttycUq8hLKVSu'
-                  window.open(`https://app.tonkeeper.com/transfer/${walletAddress}?amount=${Math.floor(parseFloat(tonAmount) * 1e9)}&text=course_${course.id}`, '_blank')
-                }}
-                className="w-full p-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-medium flex items-center justify-center gap-2"
-              >
-                🔷 Tonkeeper
+                💎 TON Wallet
               </button>
             </div>
             
