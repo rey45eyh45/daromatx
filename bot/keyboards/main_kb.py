@@ -45,6 +45,22 @@ def get_start_inline_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
+def get_mini_app_keyboard(page: str = "") -> InlineKeyboardMarkup:
+    """Mini App ochish tugmasi"""
+    
+    url = config.mini_app_url
+    if page:
+        url = f"{url}/{page}"
+    
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="🚀 Mini App'ni ochish",
+        web_app=WebAppInfo(url=url)
+    )
+    
+    return builder.as_markup()
+
+
 def get_course_keyboard(course_id: int) -> InlineKeyboardMarkup:
     """Kurs uchun klaviatura"""
     
