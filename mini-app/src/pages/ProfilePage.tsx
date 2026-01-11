@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useTelegram } from '../context/TelegramContext'
-import { usersApi, adminApi, User } from '../api'
+import { usersApi, User } from '../api'
 import Loading from '../components/Loading'
 import { 
   VideoIcon, 
@@ -13,19 +13,19 @@ import {
   BellIcon,
   StarIcon,
   CoursesIcon,
-  ShieldIcon
+  BarChartIcon
 } from '../components/Icons'
+
+// Admin telegram IDs
+const ADMIN_IDS = [5425876649, 123456789]
 
 export default function ProfilePage() {
   const { user: tgUser } = useTelegram()
-  const navigate = useNavigate()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     loadProfile()
-    checkAdminStatus()
   }, [])
 
   const loadProfile = async () => {
@@ -36,16 +36,6 @@ export default function ProfilePage() {
       console.error('Error loading profile:', error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const checkAdminStatus = async () => {
-    try {
-      const res = await adminApi.checkAdmin()
-      setIsAdmin(res.data.is_admin)
-    } catch (error) {
-      console.error('Error checking admin status:', error)
-      setIsAdmin(false)
     }
   }
 
@@ -166,24 +156,28 @@ export default function ProfilePage() {
             </div>
           </button>
         </div>
-        
-        {/* Admin Panel Button */}
-        {isAdmin && (
-          <button
-            onClick={() => navigate('/admin')}
-            className="w-full mt-3 bg-gradient-to-r from-red-500 to-orange-500 p-4 rounded-2xl flex items-center gap-3 shadow-lg hover:shadow-xl transition-all active:scale-95"
-          >
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-              <ShieldIcon size={24} className="text-white" />
-            </div>
-            <div className="text-left flex-1">
-              <h3 className="font-semibold text-white text-sm">Admin Panel</h3>
-              <p className="text-[10px] text-white/80">Boshqaruv paneli</p>
-            </div>
-            <ChevronRightIcon size={20} className="text-white/80" />
-          </button>
-        )}
       </div>
+
+      {/* Admin Panel - faqat adminlar uchun */}
+      {ADMIN_IDS.includes(displayUser.telegram_id) && (
+        <div className="px-4 mt-6">
+          <h3 className="text-sm font-semibold text-telegram-hint mb-3 px-1">🔐 Boshqaruv</h3>
+          <div className="bg-telegram-bg rounded-2xl overflow-hidden shadow-sm">
+            <Link to="/admin">
+              <div className="flex items-center gap-4 p-4 hover:bg-telegram-secondary/50 transition-all active:bg-telegram-secondary bg-gradient-to-r from-red-500/5 to-orange-500/5">
+                <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center">
+                  <BarChartIcon size={20} className="text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-medium text-telegram-text text-sm">Admin Panel</h3>
+                  <p className="text-telegram-hint text-xs">Kurslar va foydalanuvchilarni boshqarish</p>
+                </div>
+                <ChevronRightIcon size={18} className="text-telegram-hint" />
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Menu items */}
       <div className="px-4 mt-6">
