@@ -239,7 +239,7 @@ async def pay_with_ton(callback: CallbackQuery):
         status="pending"
     )
     
-    ton_wallet = "UQC...YOUR_WALLET"  # O'zingizning TON wallet manzili
+    ton_wallet = "UQD7hkW5-rC8EHHZAmMAnzhddHxexDQKx26ttycUq8hLKVSu"  # TON wallet manzili
     
     builder = InlineKeyboardBuilder()
     builder.button(text="💎 Tonkeeper", url=f"ton://transfer/{ton_wallet}?amount={int(ton_price * 1e9)}&text=course_{payment.id}")

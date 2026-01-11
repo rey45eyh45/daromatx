@@ -123,7 +123,7 @@ export default function CourseDetailPage() {
     if (!course) return
     
     const tonAmount = (course.price / 50000).toFixed(2)
-    const walletAddress = import.meta.env.VITE_TON_WALLET || 'UQCyAO5sNiO5sNBVB5f9gP8yzaVPV4HsWQ'
+    const walletAddress = import.meta.env.VITE_TON_WALLET || 'UQD7hkW5-rC8EHHZAmMAnzhddHxexDQKx26ttycUq8hLKVSu'
     const comment = `course_${course.id}`
     const url = `ton://transfer/${walletAddress}?amount=${Math.floor(parseFloat(tonAmount) * 1e9)}&text=${comment}`
     

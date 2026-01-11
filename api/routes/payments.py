@@ -9,7 +9,7 @@ from database.repositories import PaymentRepository, CourseRepository, UserRepos
 router = APIRouter()
 
 BOT_USERNAME = os.getenv("BOT_USERNAME", "daromatx_bot")
-TON_WALLET = os.getenv("TON_WALLET_ADDRESS", "")
+TON_WALLET = os.getenv("TON_WALLET_ADDRESS", "UQD7hkW5-rC8EHHZAmMAnzhddHxexDQKx26ttycUq8hLKVSu")
 
 
 class CreatePaymentRequest(BaseModel):
