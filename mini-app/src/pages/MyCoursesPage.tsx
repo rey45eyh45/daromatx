@@ -4,40 +4,6 @@ import { usersApi, PurchasedCourse } from '../api'
 import Loading from '../components/Loading'
 import { PlayIcon, CheckIcon, ClockIcon, VideoIcon } from '../components/Icons'
 
-// Demo data for testing when API is not available
-const demoCourses: PurchasedCourse[] = [
-  {
-    id: 1,
-    course_id: 1,
-    course_title: 'Python dasturlash asoslari',
-    progress: 65,
-    total_lessons: 24,
-    completed_lessons: 16,
-    thumbnail: '',
-    purchased_at: '2026-01-05'
-  },
-  {
-    id: 2,
-    course_id: 2,
-    course_title: 'Web dizayn kursi',
-    progress: 30,
-    total_lessons: 18,
-    completed_lessons: 5,
-    thumbnail: '',
-    purchased_at: '2026-01-08'
-  },
-  {
-    id: 3,
-    course_id: 3,
-    course_title: 'SMM marketing',
-    progress: 100,
-    total_lessons: 12,
-    completed_lessons: 12,
-    thumbnail: '',
-    purchased_at: '2025-12-20'
-  }
-]
-
 export default function MyCoursesPage() {
   const [courses, setCourses] = useState<PurchasedCourse[]>([])
   const [loading, setLoading] = useState(true)
@@ -50,11 +16,10 @@ export default function MyCoursesPage() {
   const loadMyCourses = async () => {
     try {
       const res = await usersApi.getMyCourses()
-      setCourses(res.data.length > 0 ? res.data : demoCourses)
+      setCourses(res.data)
     } catch (error) {
       console.error('Error loading my courses:', error)
-      // Use demo data for testing
-      setCourses(demoCourses)
+      setCourses([])
     } finally {
       setLoading(false)
     }
