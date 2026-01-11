@@ -34,14 +34,17 @@ export default function CourseCard({ course }: CourseCardProps) {
     >
       {/* Thumbnail */}
       <div className="relative h-40 bg-gradient-to-br from-telegram-button to-purple-600 flex items-center justify-center">
-        {course.thumbnail ? (
+        {course.thumbnail && course.thumbnail.startsWith('http') ? (
           <img 
             src={course.thumbnail} 
             alt={course.title}
             className="w-full h-full object-cover"
           />
         ) : (
-          <span className="text-6xl">{getCategoryIcon(course.category)}</span>
+          <>
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 opacity-90" />
+            <span className="relative text-6xl">{getCategoryIcon(course.category)}</span>
+          </>
         )}
         
         {/* Category badge */}
