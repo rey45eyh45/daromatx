@@ -23,6 +23,15 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', error.message, error.config?.url)
+    return Promise.reject(error)
+  }
+)
+
 // Types
 export interface Course {
   id: number
