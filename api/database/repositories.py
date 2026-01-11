@@ -1,6 +1,6 @@
 from datetime import datetime, date
 from typing import List, Optional
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
 from sqlalchemy.orm import selectinload
 
 from database.base import async_session
@@ -263,8 +263,19 @@ class CourseRepository:
             return course
     
     async def delete_course(self, course_id: int) -> bool:
-        """Kursni o'chirish"""
+        """Kursni o'chirish (darslar bilan birga)"""
         async with async_session() as session:
+            # Avval kursga tegishli darslarni o'chirish
+            await session.execute(
+                delete(Lesson).where(Lesson.course_id == course_id)
+            )
+            
+            # Kursni sotib olganlarni o'chirish
+            await session.execute(
+                delete(UserCourse).where(UserCourse.course_id == course_id)
+            )
+            
+            # Kursni o'chirish
             result = await session.execute(
                 select(Course).where(Course.id == course_id)
             )
