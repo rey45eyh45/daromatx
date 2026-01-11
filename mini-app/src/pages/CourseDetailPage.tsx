@@ -380,30 +380,33 @@ export default function CourseDetailPage() {
               </ol>
             </div>
             
+            {/* Wallet manzili */}
+            <div className="bg-purple-50 rounded-xl p-3 mb-4">
+              <div className="text-xs text-purple-600 mb-1">Wallet manzili:</div>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-xs bg-white p-2 rounded-lg text-purple-800 font-mono break-all">
+                  {import.meta.env.VITE_TON_WALLET || 'UQD7hkW5-rC8EHHZAmMAnzhddHxexDQKx26ttycUq8hLKVSu'}
+                </code>
+                <button
+                  onClick={() => {
+                    const wallet = import.meta.env.VITE_TON_WALLET || 'UQD7hkW5-rC8EHHZAmMAnzhddHxexDQKx26ttycUq8hLKVSu'
+                    navigator.clipboard.writeText(wallet)
+                    showAlert('Manzil nusxalandi!')
+                  }}
+                  className="p-2 bg-purple-500 text-white rounded-lg text-sm"
+                >
+                  📋
+                </button>
+              </div>
+            </div>
+            
             {/* Wallet tugmalari */}
             <div className="space-y-2 mb-4">
               <button
                 onClick={handleTonPayment}
                 className="w-full p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium flex items-center justify-center gap-2"
               >
-                💎 TON Wallet (Universal)
-              </button>
-              
-              <button
-                onClick={() => {
-                  const tonAmount = (course.price / 50000).toFixed(2)
-                  const walletAddress = import.meta.env.VITE_TON_WALLET || 'UQD7hkW5-rC8EHHZAmMAnzhddHxexDQKx26ttycUq8hLKVSu'
-                  const tg = window.Telegram?.WebApp
-                  // Telegram ichidagi @wallet botiga yo'naltirish
-                  if (tg) {
-                    tg.openTelegramLink(`https://t.me/wallet?startattach=transfer_${walletAddress}_${Math.floor(parseFloat(tonAmount) * 1e9)}_course_${course.id}`)
-                  } else {
-                    window.open(`https://t.me/wallet`, '_blank')
-                  }
-                }}
-                className="w-full p-4 bg-gradient-to-r from-sky-500 to-cyan-500 text-white rounded-xl font-medium flex items-center justify-center gap-2"
-              >
-                📱 Telegram Wallet
+                � Istalgan TON Wallet
               </button>
               
               <button
