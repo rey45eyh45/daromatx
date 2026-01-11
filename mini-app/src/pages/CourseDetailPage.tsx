@@ -137,7 +137,8 @@ export default function CourseDetailPage() {
   const handleTonPayment = () => {
     if (!course) return
     
-    const tonAmount = (course.price / 50000).toFixed(2)
+    // Agar ton_price belgilangan bo'lsa, uni ishlatish; aks holda avtomatik hisoblash
+    const tonAmount = course.ton_price > 0 ? course.ton_price.toFixed(2) : (course.price / 50000).toFixed(2)
     const walletAddress = import.meta.env.VITE_TON_WALLET || 'UQD7hkW5-rC8EHHZAmMAnzhddHxexDQKx26ttycUq8hLKVSu'
     const comment = `course_${course.id}`
     const url = `ton://transfer/${walletAddress}?amount=${Math.floor(parseFloat(tonAmount) * 1e9)}&text=${comment}`
@@ -328,7 +329,7 @@ export default function CourseDetailPage() {
                 className="w-full p-4 bg-purple-100 text-purple-700 rounded-xl font-medium flex items-center justify-between"
               >
                 <span>💎 TON Crypto</span>
-                <span>≈ {(course.price / 50000).toFixed(2)} TON</span>
+                <span>≈ {course.ton_price > 0 ? course.ton_price.toFixed(2) : (course.price / 50000).toFixed(2)} TON</span>
               </button>
             </div>
             
@@ -362,7 +363,7 @@ export default function CourseDetailPage() {
             {/* Summa */}
             <div className="bg-purple-100 rounded-2xl p-4 mb-4 text-center">
               <div className="text-3xl font-bold text-purple-700 mb-1">
-                {(course.price / 50000).toFixed(2)} TON
+                {course.ton_price > 0 ? course.ton_price.toFixed(2) : (course.price / 50000).toFixed(2)} TON
               </div>
               <div className="text-purple-600 text-sm">
                 ≈ {formatPrice(course.price)} so'm

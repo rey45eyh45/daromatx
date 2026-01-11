@@ -35,6 +35,7 @@ class Course(Base):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     price: Mapped[float] = mapped_column(Float, nullable=False)
     stars_price: Mapped[int] = mapped_column(Integer, default=100)
+    ton_price: Mapped[float] = mapped_column(Float, default=0)  # TON narxi
     thumbnail: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     category: Mapped[str] = mapped_column(String(100), default="Boshqa")
     duration: Mapped[int] = mapped_column(Integer, default=0)  # soatlarda

@@ -22,6 +22,7 @@ export default function AdminPage() {
     description: '',
     price: '',
     stars_price: '',
+    ton_price: '',
     category: 'Dasturlash'
   })
 
@@ -59,6 +60,7 @@ export default function AdminPage() {
         description: courseForm.description,
         price: parseFloat(courseForm.price),
         stars_price: parseInt(courseForm.stars_price) || 100,
+        ton_price: parseFloat(courseForm.ton_price) || 0,
         category: courseForm.category
       })
       
@@ -69,6 +71,7 @@ export default function AdminPage() {
         description: '',
         price: '',
         stars_price: '',
+        ton_price: '',
         category: 'Dasturlash'
       })
       loadStats()
@@ -180,6 +183,19 @@ export default function AdminPage() {
                     placeholder="100"
                   />
                 </div>
+              </div>
+              
+              <div>
+                <label className="text-telegram-hint text-sm">TON narxi 💎</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={courseForm.ton_price}
+                  onChange={(e) => setCourseForm({ ...courseForm, ton_price: e.target.value })}
+                  className="w-full p-3 bg-telegram-secondary rounded-xl text-telegram-text outline-none"
+                  placeholder="2.5"
+                />
+                <p className="text-telegram-hint text-xs mt-1">TON kriptovalyutasidagi narx (masalan: 2.5)</p>
               </div>
               
               <div>

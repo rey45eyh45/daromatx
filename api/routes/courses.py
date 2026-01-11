@@ -27,6 +27,7 @@ class CourseResponse(BaseModel):
     description: str
     price: float
     stars_price: int
+    ton_price: float = 0
     thumbnail: Optional[str]
     category: str
     duration: int

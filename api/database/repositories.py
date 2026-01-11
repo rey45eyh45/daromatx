@@ -114,6 +114,7 @@ class CourseRepository:
         description: str,
         price: float,
         stars_price: int = 100,
+        ton_price: float = 0,
         thumbnail: Optional[str] = None,
         category: str = "Boshqa",
         author_id: Optional[int] = None
@@ -125,6 +126,7 @@ class CourseRepository:
                 description=description,
                 price=price,
                 stars_price=stars_price,
+                ton_price=ton_price,
                 thumbnail=thumbnail,
                 category=category,
                 author_id=author_id

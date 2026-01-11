@@ -28,6 +28,7 @@ export interface Course {
   description: string
   price: number
   stars_price: number
+  ton_price: number
   thumbnail: string | null
   category: string
   duration: number
@@ -141,7 +142,7 @@ export const adminApi = {
   getStats: () => 
     api.get('/admin/stats'),
   
-  createCourse: (data: { title: string; description: string; price: number; stars_price: number; category: string }) =>
+  createCourse: (data: { title: string; description: string; price: number; stars_price: number; ton_price: number; category: string }) =>
     api.post('/admin/courses', data),
   
   getUsers: (limit?: number, offset?: number) =>

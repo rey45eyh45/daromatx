@@ -24,6 +24,7 @@ class CourseCreateRequest(BaseModel):
     description: str
     price: float
     stars_price: int = 100
+    ton_price: float = 0
     category: str = "Boshqa"
 
 
@@ -82,6 +83,7 @@ async def create_course(
         description=request.description,
         price=request.price,
         stars_price=request.stars_price,
+        ton_price=request.ton_price,
         category=request.category,
         author_id=telegram_id
     )
