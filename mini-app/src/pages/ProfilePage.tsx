@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTelegram } from '../context/TelegramContext'
-import { usersApi, User } from '../api'
+import { usersApi, adminApi, User } from '../api'
 import Loading from '../components/Loading'
 import { 
   VideoIcon, 
@@ -12,16 +12,20 @@ import {
   ChevronRightIcon,
   BellIcon,
   StarIcon,
-  CoursesIcon
+  CoursesIcon,
+  ShieldIcon
 } from '../components/Icons'
 
 export default function ProfilePage() {
   const { user: tgUser } = useTelegram()
+  const navigate = useNavigate()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     loadProfile()
+    checkAdminStatus()
   }, [])
 
   const loadProfile = async () => {
@@ -32,6 +36,16 @@ export default function ProfilePage() {
       console.error('Error loading profile:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const checkAdminStatus = async () => {
+    try {
+      const res = await adminApi.checkAdmin()
+      setIsAdmin(res.data.is_admin)
+    } catch (error) {
+      console.error('Error checking admin status:', error)
+      setIsAdmin(false)
     }
   }
 
@@ -152,6 +166,23 @@ export default function ProfilePage() {
             </div>
           </button>
         </div>
+        
+        {/* Admin Panel Button */}
+        {isAdmin && (
+          <button
+            onClick={() => navigate('/admin')}
+            className="w-full mt-3 bg-gradient-to-r from-red-500 to-orange-500 p-4 rounded-2xl flex items-center gap-3 shadow-lg hover:shadow-xl transition-all active:scale-95"
+          >
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+              <ShieldIcon size={24} className="text-white" />
+            </div>
+            <div className="text-left flex-1">
+              <h3 className="font-semibold text-white text-sm">Admin Panel</h3>
+              <p className="text-[10px] text-white/80">Boshqaruv paneli</p>
+            </div>
+            <ChevronRightIcon size={20} className="text-white/80" />
+          </button>
+        )}
       </div>
 
       {/* Menu items */}

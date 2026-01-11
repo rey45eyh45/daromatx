@@ -35,6 +35,25 @@ class CourseCreateRequest(BaseModel):
     category: str = "Boshqa"
 
 
+@router.get("/check")
+async def check_is_admin(
+    x_telegram_init_data: str = Header(..., alias="X-Telegram-Init-Data")
+):
+    """Admin ekanligini tekshirish"""
+    
+    import json
+    from urllib.parse import unquote
+    
+    try:
+        data_parts = dict(x.split('=') for x in x_telegram_init_data.split('&'))
+        user_data = json.loads(unquote(data_parts.get('user', '{}')))
+        telegram_id = user_data.get('id')
+    except:
+        raise HTTPException(status_code=400, detail="Invalid init data format")
+    
+    return {"is_admin": check_admin(telegram_id)}
+
+
 @router.get("/stats", response_model=StatsResponse)
 async def get_stats(
     x_telegram_init_data: str = Header(..., alias="X-Telegram-Init-Data")

@@ -139,6 +139,9 @@ export const paymentsApi = {
 }
 
 export const adminApi = {
+  checkAdmin: () =>
+    api.get<{ is_admin: boolean }>('/admin/check'),
+  
   getStats: () => 
     api.get('/admin/stats'),
   
