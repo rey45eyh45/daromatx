@@ -1,7 +1,8 @@
 from aiogram import Router, F, Bot
-from aiogram.types import Message, CallbackQuery, LabeledPrice, PreCheckoutQuery
+from aiogram.types import Message, CallbackQuery, LabeledPrice, PreCheckoutQuery, WebAppInfo
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from config import config
 from database.repositories import CourseRepository, PaymentRepository, UserRepository
 
 router = Router()
@@ -75,10 +76,23 @@ async def successful_payment_handler(message: Message):
         course_repo = CourseRepository()
         course = await course_repo.get_course_by_id(course_id)
         
+        # Mini App tugmasi bilan javob
+        builder = InlineKeyboardBuilder()
+        builder.button(
+            text="📚 Kursni ko'rish",
+            web_app=WebAppInfo(url=f"{config.mini_app_url}/courses/{course_id}")
+        )
+        builder.button(
+            text="📖 Barcha kurslarim",
+            web_app=WebAppInfo(url=f"{config.mini_app_url}/my-courses")
+        )
+        builder.adjust(1)
+        
         await message.answer(
             f"🎉 <b>Tabriklaymiz!</b>\n\n"
             f"Siz «{course.title}» kursini muvaffaqiyatli sotib oldingiz!\n\n"
-            f"📚 Kursni ko'rish uchun /my_courses buyrug'ini yuboring."
+            f"📚 Quyidagi tugmani bosib kursni ko'rishingiz mumkin:",
+            reply_markup=builder.as_markup()
         )
 
 
