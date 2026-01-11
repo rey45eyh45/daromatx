@@ -263,30 +263,50 @@ class CourseRepository:
             return course
     
     async def delete_course(self, course_id: int) -> bool:
-        """Kursni o'chirish (darslar bilan birga)"""
+        """Kursni o'chirish (barcha bog'liq ma'lumotlar bilan)"""
         async with async_session() as session:
-            # Avval kursga tegishli darslarni o'chirish
-            await session.execute(
-                delete(Lesson).where(Lesson.course_id == course_id)
-            )
-            
-            # Kursni sotib olganlarni o'chirish
-            await session.execute(
-                delete(UserCourse).where(UserCourse.course_id == course_id)
-            )
-            
-            # Kursni o'chirish
-            result = await session.execute(
-                select(Course).where(Course.id == course_id)
-            )
-            course = result.scalar_one_or_none()
-            
-            if course:
-                await session.delete(course)
-                await session.commit()
-                return True
-            
-            return False
+            try:
+                # 1. Darslarning progress'ini o'chirish
+                lessons_result = await session.execute(
+                    select(Lesson.id).where(Lesson.course_id == course_id)
+                )
+                lesson_ids = [row[0] for row in lessons_result.fetchall()]
+                
+                if lesson_ids:
+                    await session.execute(
+                        delete(LessonProgress).where(LessonProgress.lesson_id.in_(lesson_ids))
+                    )
+                
+                # 2. Darslarni o'chirish
+                await session.execute(
+                    delete(Lesson).where(Lesson.course_id == course_id)
+                )
+                
+                # 3. Kursni sotib olganlarni o'chirish
+                await session.execute(
+                    delete(UserCourse).where(UserCourse.course_id == course_id)
+                )
+                
+                # 4. To'lovlarni o'chirish
+                await session.execute(
+                    delete(Payment).where(Payment.course_id == course_id)
+                )
+                
+                # 5. Kursni o'chirish
+                result = await session.execute(
+                    select(Course).where(Course.id == course_id)
+                )
+                course = result.scalar_one_or_none()
+                
+                if course:
+                    await session.delete(course)
+                    await session.commit()
+                    return True
+                
+                return False
+            except Exception as e:
+                await session.rollback()
+                raise e
     
     async def update_course_thumbnail(self, course_id: int, thumbnail_url: str) -> Optional[Course]:
         """Kurs thumbnailini yangilash"""
