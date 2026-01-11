@@ -46,8 +46,9 @@ function App() {
           <Route path="my-courses" element={<MyCoursesPage />} />
           <Route path="lesson/:id" element={<LessonPage />} />
           <Route path="profile" element={<ProfilePage />} />
-          <Route path="admin" element={<AdminPage />} />
         </Route>
+        {/* Admin sahifa - Layout'siz (BottomNav yo'q) */}
+        <Route path="admin" element={<AdminPage />} />
       </Routes>
     </TelegramProvider>
   )

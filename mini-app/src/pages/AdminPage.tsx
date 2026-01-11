@@ -137,9 +137,10 @@ export default function AdminPage() {
       })
       loadStats()
       loadCourses()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding course:', error)
-      showAlert('Xatolik yuz berdi!')
+      const message = error.response?.data?.detail || error.message || 'Xatolik yuz berdi!'
+      showAlert(`❌ ${message}`)
     }
   }
 

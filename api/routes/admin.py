@@ -194,18 +194,24 @@ async def create_course(
     if not check_admin(telegram_id):
         raise HTTPException(status_code=403, detail="Ruxsat yo'q")
     
-    course_repo = CourseRepository()
-    course = await course_repo.create_course(
-        title=request.title,
-        description=request.description,
-        price=request.price,
-        stars_price=request.stars_price,
-        ton_price=request.ton_price,
-        category=request.category,
-        author_id=telegram_id
-    )
-    
-    return {"success": True, "course_id": course.id}
+    try:
+        course_repo = CourseRepository()
+        course = await course_repo.create_course(
+            title=request.title,
+            description=request.description,
+            price=request.price,
+            stars_price=request.stars_price,
+            ton_price=request.ton_price,
+            category=request.category,
+            author_id=telegram_id
+        )
+        
+        return {"success": True, "course_id": course.id}
+    except Exception as e:
+        import traceback
+        print(f"Error creating course: {e}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Kurs yaratishda xatolik: {str(e)}")
 
 
 @router.get("/users")
