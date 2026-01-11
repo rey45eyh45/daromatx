@@ -33,23 +33,49 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   const backButtonCallbackRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
-    const tg = window.Telegram?.WebApp
-    
-    if (tg) {
-      setUser(tg.initDataUnsafe.user || null)
-      setInitData(tg.initData)
-      setIsReady(true)
-    } else {
-      // Development mode - mock user
-      setUser({
-        id: 123456789,
-        first_name: 'Test',
-        last_name: 'User',
-        username: 'testuser'
-      })
-      setInitData('user=%7B%22id%22%3A123456789%7D')
-      setIsReady(true)
+    const initTelegram = () => {
+      const tg = window.Telegram?.WebApp
+      
+      if (tg && tg.initDataUnsafe?.user) {
+        console.log('Telegram WebApp initialized:', tg.initDataUnsafe.user)
+        setUser(tg.initDataUnsafe.user)
+        setInitData(tg.initData)
+        setIsReady(true)
+        return true
+      }
+      return false
     }
+    
+    // Darhol sinab ko'rish
+    if (initTelegram()) return
+    
+    // Agar Telegram hali yuklanmagan bo'lsa, qayta sinash
+    const retryCount = 5
+    let attempts = 0
+    
+    const retryInterval = setInterval(() => {
+      attempts++
+      console.log(`Telegram init attempt ${attempts}/${retryCount}`)
+      
+      if (initTelegram() || attempts >= retryCount) {
+        clearInterval(retryInterval)
+        
+        // Agar hali ham topilmasa, development mode
+        if (!window.Telegram?.WebApp?.initDataUnsafe?.user) {
+          console.log('Using development mode user')
+          setUser({
+            id: 123456789,
+            first_name: 'Mehmon',
+            last_name: '',
+            username: 'guest'
+          })
+          setInitData('user=%7B%22id%22%3A123456789%7D')
+          setIsReady(true)
+        }
+      }
+    }, 200)
+    
+    return () => clearInterval(retryInterval)
   }, [])
 
   const showMainButton = (text: string, onClick: () => void) => {
