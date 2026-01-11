@@ -74,13 +74,6 @@ async def get_current_user(
 ):
     """Joriy foydalanuvchi ma'lumotlari"""
     
-    # Telegram ma'lumotlarini tekshirish
-    # Development uchun vaqtincha o'chirilgan
-    # data = validate_telegram_data(x_telegram_init_data)
-    # if not data:
-    #     raise HTTPException(status_code=401, detail="Invalid Telegram data")
-    
-    # Vaqtincha: init_data dan user_id olish
     import json
     from urllib.parse import unquote
     
@@ -88,6 +81,9 @@ async def get_current_user(
         data_parts = dict(x.split('=') for x in x_telegram_init_data.split('&'))
         user_data = json.loads(unquote(data_parts.get('user', '{}')))
         telegram_id = user_data.get('id')
+        first_name = user_data.get('first_name', 'Foydalanuvchi')
+        last_name = user_data.get('last_name', '')
+        username = user_data.get('username')
     except:
         raise HTTPException(status_code=400, detail="Invalid init data format")
     
@@ -97,8 +93,14 @@ async def get_current_user(
     user_repo = UserRepository()
     user = await user_repo.get_user_by_telegram_id(telegram_id)
     
+    # Agar foydalanuvchi topilmasa, avtomatik yaratish
     if not user:
-        raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+        full_name = f"{first_name} {last_name}".strip()
+        user = await user_repo.create_or_update_user(
+            telegram_id=telegram_id,
+            username=username,
+            full_name=full_name
+        )
     
     return UserResponse(
         id=user.id,
