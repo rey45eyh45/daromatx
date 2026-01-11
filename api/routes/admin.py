@@ -6,6 +6,7 @@ import uuid
 import aiofiles
 
 from database.repositories import UserRepository, CourseRepository, PaymentRepository, LessonRepository
+from database.base import async_session
 from config import config
 
 router = APIRouter()
@@ -18,6 +19,38 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 def check_admin(telegram_id: int) -> bool:
     """Admin tekshirish"""
     return telegram_id in config.admin_ids
+
+
+@router.post("/migrate")
+async def run_migration(
+    x_telegram_init_data: str = Header(..., alias="X-Telegram-Init-Data")
+):
+    """Database migration - ton_price ustunini qo'shish"""
+    import json
+    from urllib.parse import unquote
+    from sqlalchemy import text
+    
+    try:
+        data_parts = dict(x.split('=') for x in x_telegram_init_data.split('&'))
+        user_data = json.loads(unquote(data_parts.get('user', '{}')))
+        telegram_id = user_data.get('id')
+    except:
+        raise HTTPException(status_code=400, detail="Invalid init data format")
+    
+    if not check_admin(telegram_id):
+        raise HTTPException(status_code=403, detail="Ruxsat yo'q")
+    
+    try:
+        async with async_session() as session:
+            # ton_price ustunini qo'shish
+            await session.execute(text("""
+                ALTER TABLE courses ADD COLUMN IF NOT EXISTS ton_price FLOAT DEFAULT 0
+            """))
+            await session.commit()
+        
+        return {"success": True, "message": "Migration muvaffaqiyatli bajarildi!"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 class StatsResponse(BaseModel):
