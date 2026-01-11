@@ -141,14 +141,14 @@ export default function CourseDetailPage() {
       const res = await paymentsApi.verifyTon(course.id)
       
       if (res.data.success) {
-        hapticFeedback('success')
+        hapticFeedback('heavy')
         showAlert(res.data.message)
         setShowTonModal(false)
         
         // Kursni qayta yuklash
         await loadCourse(course.id)
       } else {
-        hapticFeedback('error')
+        hapticFeedback('rigid')
         showAlert(res.data.message)
       }
     } catch (error) {
