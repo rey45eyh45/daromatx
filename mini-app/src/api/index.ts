@@ -1,12 +1,14 @@
 import axios from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+// Production API URL
+const API_URL = import.meta.env.VITE_API_URL || 'https://secure-nurturing-production.up.railway.app'
 
 const api = axios.create({
   baseURL: `${API_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 15000, // 15 sekund timeout
 })
 
 // Telegram init data ni har bir so'rovga qo'shish
