@@ -5,6 +5,9 @@ import CourseCard from '../components/CourseCard'
 import { SkeletonCard } from '../components/Loading'
 import { SearchIcon } from '../components/Icons'
 
+// API URL for debugging
+const API_URL = 'https://secure-nurturing-production.up.railway.app'
+
 // Default categories when API is not available
 const defaultCategories: Category[] = [
   { id: '1', name: 'Dasturlash', icon: '💻' },
@@ -23,6 +26,7 @@ export default function CoursesPage() {
   const [categories, setCategories] = useState<Category[]>(defaultCategories)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [error, setError] = useState<string | null>(null)
   
   const activeCategory = searchParams.get('category') || ''
 
@@ -48,11 +52,13 @@ export default function CoursesPage() {
 
   const loadCourses = async () => {
     setLoading(true)
+    setError(null)
     try {
       const res = await coursesApi.getAll(activeCategory || undefined, search || undefined)
       setCourses(res.data)
-    } catch (error) {
-      console.error('Error loading courses:', error)
+    } catch (err: any) {
+      console.error('Error loading courses:', err)
+      setError(`Xato: ${err.message}. API: ${API_URL}`)
     } finally {
       setLoading(false)
     }
@@ -174,6 +180,11 @@ export default function CoursesPage() {
               <span className="text-4xl">🔍</span>
             </div>
             <h3 className="font-semibold text-telegram-text mb-2">Kurslar topilmadi</h3>
+            {error && (
+              <p className="text-red-500 text-xs px-4 mb-2 break-all">
+                {error}
+              </p>
+            )}
             <p className="text-telegram-hint text-sm px-8 mb-4">
               Boshqa kategoriya yoki so'zni sinab ko'ring
             </p>
@@ -182,6 +193,7 @@ export default function CoursesPage() {
                 setSearch('')
                 searchParams.delete('category')
                 setSearchParams(searchParams)
+                loadCourses()
               }}
               className="px-6 py-2.5 bg-telegram-button text-white rounded-xl text-sm font-medium"
             >
