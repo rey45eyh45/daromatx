@@ -45,7 +45,11 @@ export default function CourseDetailPage() {
         })
       }
     }
-  }, [course])
+    
+    return () => {
+      hideMainButton()
+    }
+  }, [course?.id, course?.is_purchased])
 
   const loadCourse = async (courseId: number) => {
     try {

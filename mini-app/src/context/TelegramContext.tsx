@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react'
 
 interface TelegramUser {
   id: number
@@ -29,6 +29,8 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<TelegramUser | null>(null)
   const [initData, setInitData] = useState('')
   const [isReady, setIsReady] = useState(false)
+  const mainButtonCallbackRef = useRef<(() => void) | null>(null)
+  const backButtonCallbackRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp
@@ -53,6 +55,12 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   const showMainButton = (text: string, onClick: () => void) => {
     const tg = window.Telegram?.WebApp
     if (tg) {
+      // Eski callback ni olib tashlash
+      if (mainButtonCallbackRef.current) {
+        tg.MainButton.offClick(mainButtonCallbackRef.current)
+      }
+      // Yangi callback ni saqlash va qo'shish
+      mainButtonCallbackRef.current = onClick
       tg.MainButton.setText(text)
       tg.MainButton.onClick(onClick)
       tg.MainButton.show()
@@ -62,6 +70,11 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   const hideMainButton = () => {
     const tg = window.Telegram?.WebApp
     if (tg) {
+      // Callback ni olib tashlash
+      if (mainButtonCallbackRef.current) {
+        tg.MainButton.offClick(mainButtonCallbackRef.current)
+        mainButtonCallbackRef.current = null
+      }
       tg.MainButton.hide()
     }
   }
@@ -69,6 +82,12 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   const showBackButton = (onClick: () => void) => {
     const tg = window.Telegram?.WebApp
     if (tg) {
+      // Eski callback ni olib tashlash
+      if (backButtonCallbackRef.current) {
+        tg.BackButton.offClick(backButtonCallbackRef.current)
+      }
+      // Yangi callback ni saqlash va qo'shish
+      backButtonCallbackRef.current = onClick
       tg.BackButton.onClick(onClick)
       tg.BackButton.show()
     }
@@ -77,6 +96,11 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   const hideBackButton = () => {
     const tg = window.Telegram?.WebApp
     if (tg) {
+      // Callback ni olib tashlash
+      if (backButtonCallbackRef.current) {
+        tg.BackButton.offClick(backButtonCallbackRef.current)
+        backButtonCallbackRef.current = null
+      }
       tg.BackButton.hide()
     }
   }
