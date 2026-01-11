@@ -30,6 +30,17 @@ export default function CourseDetailPage() {
     }
   }, [id])
 
+  // Modal ochilganda MainButton yashirish
+  useEffect(() => {
+    if (showPaymentModal || showTonModal) {
+      hideMainButton()
+    } else if (course && !course.is_purchased) {
+      showMainButton(`Sotib olish - ${formatPrice(course.price)} so'm`, () => {
+        setShowPaymentModal(true)
+      })
+    }
+  }, [showPaymentModal, showTonModal])
+
   useEffect(() => {
     if (course) {
       if (course.is_purchased) {
@@ -39,7 +50,7 @@ export default function CourseDetailPage() {
             navigate(`/lesson/${course.lessons[0].id}`)
           }
         })
-      } else {
+      } else if (!showPaymentModal && !showTonModal) {
         showMainButton(`Sotib olish - ${formatPrice(course.price)} so'm`, () => {
           setShowPaymentModal(true)
         })
