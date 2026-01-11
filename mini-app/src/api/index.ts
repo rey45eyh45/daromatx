@@ -126,6 +126,12 @@ export const paymentsApi = {
   
   checkStatus: (paymentId: number) =>
     api.get(`/payments/${paymentId}/status`),
+  
+  verifyTon: (courseId: number) =>
+    api.post<{ success: boolean; message: string; course_id?: number; expected_amount?: number; wallet?: string; already_purchased?: boolean }>('/payments/ton/verify', { course_id: courseId }),
+  
+  getTonInfo: () =>
+    api.get<{ wallet: string; rate: number; currency: string }>('/payments/ton/info'),
 }
 
 export const adminApi = {

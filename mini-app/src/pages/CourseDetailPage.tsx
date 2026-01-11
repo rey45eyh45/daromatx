@@ -13,6 +13,8 @@ export default function CourseDetailPage() {
   const [loading, setLoading] = useState(true)
   const [purchasing, setPurchasing] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [showTonModal, setShowTonModal] = useState(false)
+  const [tonVerifying, setTonVerifying] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -92,13 +94,10 @@ export default function CourseDetailPage() {
       }
       
       if (paymentType === 'ton') {
-        // TON Crypto to'lov
-        const tonAmount = (course.price / 50000).toFixed(2)
-        const walletAddress = import.meta.env.VITE_TON_WALLET || 'UQD...'
-        const url = `ton://transfer/${walletAddress}?amount=${Math.floor(parseFloat(tonAmount) * 1e9)}&text=course_${course.id}`
-        window.open(url, '_blank')
-        showAlert(`${tonAmount} TON yuborilgandan keyin kurs ochiladi.`)
+        // TON modal ochish
         setShowPaymentModal(false)
+        setShowTonModal(true)
+        setPurchasing(false)
         return
       }
       
@@ -117,6 +116,46 @@ export default function CourseDetailPage() {
       showAlert('Xatolik yuz berdi. Telegram Stars bilan to\'lab ko\'ring.')
     } finally {
       setPurchasing(false)
+    }
+  }
+
+  const handleTonPayment = () => {
+    if (!course) return
+    
+    const tonAmount = (course.price / 50000).toFixed(2)
+    const walletAddress = import.meta.env.VITE_TON_WALLET || 'UQCyAO5sNiO5sNBVB5f9gP8yzaVPV4HsWQ'
+    const comment = `course_${course.id}`
+    const url = `ton://transfer/${walletAddress}?amount=${Math.floor(parseFloat(tonAmount) * 1e9)}&text=${comment}`
+    
+    // Tonkeeper yoki boshqa wallet ochish
+    window.open(url, '_blank')
+  }
+
+  const verifyTonPayment = async () => {
+    if (!course) return
+    
+    setTonVerifying(true)
+    hapticFeedback('medium')
+    
+    try {
+      const res = await paymentsApi.verifyTon(course.id)
+      
+      if (res.data.success) {
+        hapticFeedback('success')
+        showAlert(res.data.message)
+        setShowTonModal(false)
+        
+        // Kursni qayta yuklash
+        await loadCourse(course.id)
+      } else {
+        hapticFeedback('error')
+        showAlert(res.data.message)
+      }
+    } catch (error) {
+      console.error('TON verify error:', error)
+      showAlert('To\'lovni tekshirishda xatolik. Qayta urinib ko\'ring.')
+    } finally {
+      setTonVerifying(false)
     }
   }
 
@@ -284,6 +323,81 @@ export default function CourseDetailPage() {
             >
               Bekor qilish
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* TON Payment Modal */}
+      {showTonModal && course && (
+        <div className="fixed inset-0 bg-black/50 flex items-end z-50" onClick={() => setShowTonModal(false)}>
+          <div 
+            className="w-full bg-telegram-bg rounded-t-3xl p-6 animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-1 bg-telegram-hint/30 rounded-full mx-auto mb-4"></div>
+            
+            <h3 className="text-xl font-bold text-telegram-text mb-2 text-center">
+              💎 TON orqali to'lov
+            </h3>
+            
+            <p className="text-telegram-hint text-sm text-center mb-4">
+              Quyidagi summani yuborib, keyin "Tekshirish" tugmasini bosing
+            </p>
+            
+            {/* Summa */}
+            <div className="bg-purple-100 rounded-2xl p-4 mb-4 text-center">
+              <div className="text-3xl font-bold text-purple-700 mb-1">
+                {(course.price / 50000).toFixed(2)} TON
+              </div>
+              <div className="text-purple-600 text-sm">
+                ≈ {formatPrice(course.price)} so'm
+              </div>
+            </div>
+            
+            {/* Yo'riqnoma */}
+            <div className="bg-telegram-secondary rounded-xl p-4 mb-4 text-sm">
+              <div className="font-medium text-telegram-text mb-2">📋 Yo'riqnoma:</div>
+              <ol className="list-decimal list-inside text-telegram-hint space-y-1">
+                <li>Quyidagi "Wallet ochish" tugmasini bosing</li>
+                <li>Comment qismiga: <code className="bg-purple-200 px-1 rounded">course_{course.id}</code></li>
+                <li>To'lovni tasdiqlang</li>
+                <li>Bu yerga qaytib "Tekshirish" bosing</li>
+              </ol>
+            </div>
+            
+            {/* Tugmalar */}
+            <div className="space-y-3">
+              <button
+                onClick={handleTonPayment}
+                className="w-full p-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-medium flex items-center justify-center gap-2"
+              >
+                💎 Wallet ochish (Tonkeeper)
+              </button>
+              
+              <button
+                onClick={verifyTonPayment}
+                disabled={tonVerifying}
+                className="w-full p-4 bg-green-500 text-white rounded-xl font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {tonVerifying ? (
+                  <>
+                    <span className="animate-spin">⏳</span>
+                    Tekshirilmoqda...
+                  </>
+                ) : (
+                  <>
+                    ✅ To'lovni tekshirish
+                  </>
+                )}
+              </button>
+              
+              <button
+                onClick={() => setShowTonModal(false)}
+                className="w-full p-4 bg-telegram-secondary text-telegram-hint rounded-xl"
+              >
+                Bekor qilish
+              </button>
+            </div>
           </div>
         </div>
       )}
