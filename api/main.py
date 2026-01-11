@@ -28,13 +28,15 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS sozlamalari
+# CORS sozlamalari - Android WebView uchun kengaytirilgan
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=False,  # Android WebView uchun False bo'lishi kerak
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
 # Static files (uploads)
