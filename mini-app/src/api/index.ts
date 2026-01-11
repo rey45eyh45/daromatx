@@ -116,6 +116,9 @@ export const lessonsApi = {
   getById: (id: number) => 
     api.get<Lesson>(`/lessons/${id}`),
   
+  getVideoUrl: (id: number) =>
+    api.get<{ video_url: string; type: string; expires?: number; token?: string; watermark?: string }>(`/lessons/${id}/video-url`),
+  
   updateProgress: (id: number, watchedSeconds: number, isCompleted: boolean) =>
     api.post(`/lessons/${id}/progress`, { watched_seconds: watchedSeconds, is_completed: isCompleted }),
 }
